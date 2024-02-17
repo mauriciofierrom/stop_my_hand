@@ -23,6 +23,6 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           otp-version: 25
-          elixir-version: 1.14
+          elixir-version: 1.13.4
       - run: mix deps.get
       - run: mix test
