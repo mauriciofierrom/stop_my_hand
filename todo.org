@@ -1,0 +1,7 @@
+* Inbox
+** TODO in the accept_invite function we must use a transaction to perform both the change of state to accepted and the insertion of the friendship record
+
+[[file:~/projects/elixir/stop_my_hand/lib/stop_my_hand/friendship.ex::TODO: Use transaction to add a friendship record as well]]
+** TODO This requires timezone handling
+
+[[file:~/projects/elixir/stop_my_hand/lib/stop_my_hand/friendship/invite.ex::TODO: This requires timezone handling]]
