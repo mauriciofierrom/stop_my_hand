@@ -6,7 +6,7 @@ let
     git
     # replace with beam.packages.erlang.elixir_1_13 if you need
     beam.packages.erlang.elixir
-    elixir_ls
+    elixir-ls
     nodejs
     postgresql_14
     # only used for frontend dependencies
