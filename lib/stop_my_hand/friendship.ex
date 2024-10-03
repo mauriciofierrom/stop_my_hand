@@ -37,4 +37,23 @@ defmodule StopMyHand.Friendship do
     friendship
     |> Repo.delete()
   end
+
+  def search_invitable_users(username, current_user) do
+    from(u in User,
+    as: :user,
+    where: not exists(
+      from(f in Friendship,
+           where: f.this_id == parent_as(:user).id or f.that_id == parent_as(:user).id,
+           select: 1
+      )
+    ),
+    where: not exists(
+      from(i in Invite,
+           where: i.invitee_id == parent_as(:user).id or i.invited_id == parent_as(:user).id,
+           select: 1
+      )
+    ),
+    where: ilike(u.username, ^"#{username}%") and u.id != ^current_user.id)
+    |> Repo.all
+  end
 end
