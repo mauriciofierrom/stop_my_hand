@@ -6,6 +6,7 @@ defmodule StopMyHand.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :username, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -41,9 +42,10 @@ defmodule StopMyHand.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :password, :username])
     |> validate_email(opts)
     |> validate_password(opts)
+    |> validate_username(opts)
   end
 
   defp validate_email(changeset, opts) do
@@ -63,6 +65,14 @@ defmodule StopMyHand.Accounts.User do
     # |> validate_format(:password, ~r/[A-Z]/, message: "at least one upper case character")
     # |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/, message: "at least one digit or punctuation character")
     |> maybe_hash_password(opts)
+  end
+
+  defp validate_username(changeset, opts) do
+    changeset
+    |> validate_required([:username])
+    |> validate_format(:username, ~r/^[a-zA-Z0-9]+$/, message: "must only contain letters and numbers")
+    |> validate_length(:username, min: 5, max: 15)
+    |> maybe_validate_unique_username(opts)
   end
 
   defp maybe_hash_password(changeset, opts) do
@@ -89,6 +99,14 @@ defmodule StopMyHand.Accounts.User do
       |> unique_constraint(:email)
     else
       changeset
+    end
+  end
+
+  defp maybe_validate_unique_username(changeset, opts) do
+    if Keyword.get(opts, :validate_username, true) do
+      changeset
+      |> unsafe_validate_unique(:username, StopMyHand.Repo)
+      |> unique_constraint(:username)
     end
   end
 
