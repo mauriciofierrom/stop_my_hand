@@ -28,11 +28,20 @@ defmodule StopMyHandWeb.UserRegistrationLiveTest do
       result =
         lv
         |> element("#registration_form")
-        |> render_change(user: %{"email" => "with spaces", "password" => "too short"})
+        |> render_change(user: %{"email" => "with spaces", "password" => "too short", "username" => "_123"})
 
       assert result =~ "Register"
       assert result =~ "must have the @ sign and no spaces"
       assert result =~ "should be at least 12 character"
+      assert result =~ "must only contain letters and numbers"
+      assert result =~ "should be at least 5 character(s)"
+
+      result =
+        lv
+        |> element("#registration_form")
+        |> render_change(user: %{"username" => "1234567891231234"})
+
+      assert result =~ "should be at most 15 character(s)"
     end
   end
 
@@ -69,6 +78,21 @@ defmodule StopMyHandWeb.UserRegistrationLiveTest do
 
       assert result =~ "has already been taken"
     end
+  end
+
+  test "renders errors for duplicated username", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, ~p"/users/register")
+
+    user = user_fixture(%{email: "test@email.com", username: "username"})
+
+    result =
+      lv
+      |> form("#registration_form",
+        user: %{"email" => user.email, "password" => "valid_password", "username" => user.username}
+      )
+      |> render_submit()
+
+    assert result =~ "has already been taken"
   end
 
   describe "registration navigation" do
