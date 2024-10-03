@@ -1,5 +1,6 @@
 defmodule StopMyHandWeb.UserLoginLive do
   use StopMyHandWeb, :live_view
+  import Phoenix.Flash
 
   def render(assigns) do
     ~H"""
@@ -36,7 +37,7 @@ defmodule StopMyHandWeb.UserLoginLive do
   end
 
   def mount(_params, _session, socket) do
-    email = live_flash(socket.assigns.flash, :email)
+    email = get(socket.assigns.flash, :email)
     form = to_form(%{"email" => email}, as: "user")
     {:ok, assign(socket, form: form), temporary_assigns: [form: form]}
   end

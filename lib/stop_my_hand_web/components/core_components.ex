@@ -17,7 +17,7 @@ defmodule StopMyHandWeb.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import StopMyHandWeb.Gettext
+  use Gettext, backend: StopMyHandWeb.Gettext
 
   @doc """
   Renders a modal.
