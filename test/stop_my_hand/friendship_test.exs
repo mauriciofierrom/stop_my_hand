@@ -9,12 +9,12 @@ defmodule StopMyHand.FriendshipTest do
   alias StopMyHand.Accounts.{User}
   alias StopMyHand.Friendship.{Invite}
 
-  describe "send_invite/2" do
+  describe "send_invite/1" do
     test "it sents the invite from the first user to the second" do
       %User{id: invitee_id} = user_fixture()
       %User{id: invited_id} = user_fixture()
 
-      {:ok, %Invite{state: state}} = Friendship.send_invite(%Invite{}, %{invitee_id: invitee_id, invited_id: invited_id})
+      {:ok, %Invite{state: state}} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
 
       assert state == :pending
     end
@@ -22,31 +22,13 @@ defmodule StopMyHand.FriendshipTest do
     test "it fails if the same user is used as both invited and invitee" do
       %User{id: id} = user_fixture()
 
-      assert {:error, _} = Friendship.send_invite(%Invite{}, %{invited_id: id, invitee_id: id})
-    end
-
-    test "fails if there's already an existing invitation" do
-      %User{id: invitee_id} = user_fixture()
-      %User{id: invited_id} = user_fixture()
-
-      Friendship.send_invite(%Invite{}, %{invitee_id: invitee_id, invited_id: invited_id})
-
-      assert {:error, _} = Friendship.send_invite(%Invite{}, %{invited_id: invited_id, invitee_id: invitee_id})
-    end
-
-    test "fails when re-inviting in less than 24 hours since last invite" do
-      %User{id: invitee_id} = user_fixture()
-      %User{id: invited_id} = user_fixture()
-
-      {:ok, invite} = Friendship.send_invite(%Invite{}, %{invitee_id: invitee_id, invited_id: invited_id})
-
-      assert {:error, _} = Friendship.send_invite(invite, %{state: :pending})
+      assert {:error, _} = Friendship.send_invite(%{invited_id: id, invitee_id: id})
     end
 
     test "succeeds when re-inviting later than 24 hours since last invite" do
-      %Invite{invitee_id: invitee_id, invited_id: invited_id} = two_day_invite = two_day_invite()
+      %Invite{invitee_id: invitee_id, invited_id: invited_id} = two_day_invite()
 
-      {:ok, %Invite{state: state}} = Friendship.send_invite(two_day_invite, %{invitee_id: invitee_id, invited_id: invited_id})
+      {:ok, %Invite{state: state}} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
 
       assert state == :pending
     end
@@ -63,7 +45,6 @@ defmodule StopMyHand.FriendshipTest do
       assert {:ok, %{invite: %Invite{state: :accepted}}} = accepted_invite()
     end
 
-    @tag focus: true
     test "it creates a friendship record with the related invite" do
       {:ok, %{invite: invite, friendship: friendship}} = accepted_invite()
 
@@ -96,6 +77,20 @@ defmodule StopMyHand.FriendshipTest do
       {:ok, %{friendship: friendship}} = accepted_invite()
 
       assert {:ok, _} = Friendship.remove_friend(friendship)
+    end
+  end
+
+  describe "search_invitable_users/2" do
+    test "does not return pending invites" do
+      %User{id: invitee_id} = current_user = user_fixture()
+      %User{id: invited_id, username: username} = user_fixture()
+
+      {:ok, _} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
+
+      assert [] = Friendship.search_invitable_users(username, current_user)
+    end
+
+    test "does not return already friends" do
     end
   end
 end

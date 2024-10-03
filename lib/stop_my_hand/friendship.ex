@@ -5,14 +5,15 @@ defmodule StopMyHand.Friendship do
 
   import Ecto.Query, warn: false
   alias StopMyHand.Repo
+  alias StopMyHand.Accounts.User
   alias Ecto.Multi
 
   alias StopMyHand.Friendship.{Invite, Friendship}
 
-  def send_invite(invite, attrs) do
-    invite
+  def send_invite(attrs) do
+    %Invite{}
     |> Invite.sending_changeset(attrs)
-    |> Repo.insert(on_conflict: {:replace, [:state]}, conflict_target: :id)
+    |> Repo.insert(on_conflict: {:replace, [:state]}, conflict_target: [:invited_id, :invitee_id])
   end
 
   def get_pending_invites(user_id) do
