@@ -28,9 +28,9 @@ defmodule StopMyHand.FriendshipFixtures do
     {:ok, invite} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
 
     two_days_ago = DateTime.from_naive!(DateTime.utc_now, "Etc/UTC")
-    |> DateTime.add(-2, :day)
-    |> DateTime.to_naive()
-    |> NaiveDateTime.truncate(:second)
+      |> DateTime.add(-2, :day)
+      |> DateTime.to_naive()
+      |> NaiveDateTime.truncate(:second)
 
     Repo.update!(Ecto.Changeset.change(invite, updated_at: two_days_ago, state: :rejected))
   end
@@ -38,6 +38,14 @@ defmodule StopMyHand.FriendshipFixtures do
   def accepted_invite() do
     %User{id: invitee_id} = user_fixture()
     %User{id: invited_id} = user_fixture()
+
+    {:ok, invite} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
+
+    Friendship.accept_invite(invite)
+  end
+
+  def accepted_invite(invited_id) do
+    %User{id: invitee_id} = user_fixture()
 
     {:ok, invite} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
 
