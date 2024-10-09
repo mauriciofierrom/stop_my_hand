@@ -62,4 +62,12 @@ defmodule StopMyHand.Friendship do
     where: ilike(u.username, ^"#{username}%") and u.id != ^current_user.id)
     |> Repo.all
   end
+
+  def get_friends(user_id) do
+    query = from f in Friendship,
+              join: u in User, on: u.id == f.this_id or u.id == f.that_id,
+              where: u.id != ^user_id,
+              select: u
+    Repo.all(query)
+  end
 end
