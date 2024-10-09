@@ -16,6 +16,10 @@ defmodule StopMyHand.Friendship do
     |> Repo.insert(on_conflict: {:replace, [:state]}, conflict_target: [:invited_id, :invitee_id])
   end
 
+  def get_invite_with_invitee(invite_id) do
+    Repo.get!(Invite, invite_id) |> Repo.preload(:invitee)
+  end
+
   def get_pending_invites(user_id) do
     Repo.get_by(Invite, invitee_id: user_id, state: :pending)
   end
