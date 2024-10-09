@@ -13,4 +13,17 @@ Hooks.ConfirmInvite = {
   }
 }
 
+Hooks.ConfirmInviteAccept = {
+  mounted() {
+    this.el.addEventListener("click", (event) => {
+      event.preventDefault()
+      const confirmed = confirm("Are you sure you want to accept invite?")
+      if(confirmed) {
+        const inviteid = this.el.dataset.inviteid
+        this.pushEvent("accept_invite", { inviteid })
+      }
+    })
+  }
+}
+
 export default Hooks;
