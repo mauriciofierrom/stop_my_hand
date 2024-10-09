@@ -30,7 +30,7 @@ defmodule StopMyHand.Friendship.Invite do
   def state_changeset(invite, attrs) do
     invite
     |> cast(attrs, [:state])
-    |> unique_constraint([:invitee_id, :invited_id, :state])
+    |> unique_constraint([:invitee_id, :invited_id])
   end
 
   def frienship_changeset(friendship, attrs) do
