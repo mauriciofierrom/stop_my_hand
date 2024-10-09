@@ -57,17 +57,17 @@ defmodule StopMyHand.FriendshipTest do
   describe "get_pending_invites/1" do
     test "does not return anything if there aren't pending sent invites" do
       %User{id: id} = user_fixture()
-      refute Friendship.get_pending_invites(id)
+      assert [] == Friendship.get_pending_invites(id)
     end
 
     test "returns only pending sent invites" do
       {:ok, %{invite: %Invite{invitee_id: id}}} = accepted_invite()
       {:ok, %Invite{invitee_id: other_id}} = rejected_invite()
-      {:ok, %Invite{invitee_id: pending_id}} = invite_fixture()
+      %Invite{invitee_id: pending_id} = invite_fixture()
 
 
-      refute Friendship.get_pending_invites(id)
-      refute Friendship.get_pending_invites(other_id)
+      assert [] == Friendship.get_pending_invites(id)
+      assert [] == Friendship.get_pending_invites(other_id)
       assert Friendship.get_pending_invites(pending_id)
     end
   end
@@ -91,6 +91,19 @@ defmodule StopMyHand.FriendshipTest do
     end
 
     test "does not return already friends" do
+    end
+  end
+
+  describe "get_friends/1" do
+    test "returns user friends" do
+      %User{id: invited_id} = user_fixture()
+
+      {:ok, %{friendship: friendship1}} = accepted_invite(invited_id)
+      {:ok, %{friendship: friendship2}} = accepted_invite(invited_id)
+
+      friends = Friendship.get_friends(invited_id)
+
+      assert [friendship1.this_id, friendship2.this_id] == Enum.map(friends, &(&1.id))
     end
   end
 end
