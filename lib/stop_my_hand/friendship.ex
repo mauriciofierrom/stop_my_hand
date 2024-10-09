@@ -21,7 +21,9 @@ defmodule StopMyHand.Friendship do
   end
 
   def get_pending_invites(user_id) do
-    Repo.get_by(Invite, invitee_id: user_id, state: :pending)
+    query = from i in Invite,
+            where: i.invited_id == ^user_id and i.state == :pending
+    Repo.all(query) |> Repo.preload(:invitee)
   end
 
   def accept_invite(%Invite{id: id, invitee_id: this_id, invited_id: that_id} = invite) do
