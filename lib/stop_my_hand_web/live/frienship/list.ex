@@ -2,6 +2,7 @@ defmodule StopMyHandWeb.Friendship.List do
   use StopMyHandWeb, :live_view
   alias StopMyHand.Friendship
   alias Phoenix.LiveView.AsyncResult
+  alias StopMyHandWeb.Dropdown
 
   def render(assigns) do
     ~H"""
@@ -57,6 +58,19 @@ defmodule StopMyHandWeb.Friendship.List do
     end
   end
 
+  def handle_event("remove_friend", %{"userid" => userid}, socket) do
+    current_user = socket.assigns.current_user
+    remove_result = Friendship.remove_friend(current_user, userid)
+    case remove_result do
+      {:ok, _} ->
+          %AsyncResult{result: friends} = socket.assigns.friends
+          {:noreply, socket
+          |> assign_async(:friends, fn -> {:ok, %{friends: Enum.filter(friends, &(&1.id == userid))}} end)
+          |> put_flash(:info, "Friend removed")}
+      _ -> {:noreply, put_flash(socket, :error, "Error removing friend")}
+    end
+  end
+
   defp invite_item(assigns) do
     ~H"""
     <div
@@ -75,7 +89,17 @@ defmodule StopMyHandWeb.Friendship.List do
       class={[
         "flex flex-row"
     ]}>
-      <div class="basis--2/3"><%= assigns.friend.username %></div>
+      <div class="basis--2/3">
+        <%= assigns.friend.username %>
+        <.live_component module={Dropdown} id={assigns.friend.id}>
+          <:button>
+            ...
+          </:button>
+          <.dropdown_item>
+            <span class="text-red-800" id={ "remove-#{assigns.friend.id}"} phx-hook="ConfirmFriendRemoval" data-userid={ assigns.friend.id }>Delete</span>
+          </.dropdown_item>
+        </.live_component>
+      </div>
     </div>
     """
   end
