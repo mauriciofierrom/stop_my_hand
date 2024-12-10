@@ -26,4 +26,17 @@ Hooks.ConfirmInviteAccept = {
   }
 }
 
+Hooks.ConfirmFriendRemoval = {
+  mounted() {
+    this.el.addEventListener("click", (event) => {
+      event.preventDefault()
+      const confirmed = confirm("Are you sure you want to remove friend?")
+      if(confirmed) {
+        const userid = this.el.dataset.userid
+        this.pushEvent("remove_friend", { userid })
+      }
+    })
+  }
+}
+
 export default Hooks;

@@ -61,5 +61,17 @@ defmodule StopMyHandWeb.ListFriendTest do
       assert result =~ friend1.invitee.username
       assert result =~ friend2.invitee.username
     end
+
+    test "shows dropdown with option to remove the friend", %{conn: conn} do
+      current_user = user_fixture()
+      {:ok, _} = accepted_invite(current_user.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, current_user), "/list")
+
+      result = render_async(lv)
+
+      assert result =~ "..."
+      assert result =~ "Delete"
+    end
   end
 end
