@@ -74,9 +74,10 @@ defmodule StopMyHand.FriendshipTest do
 
   describe "delete_friend/2" do
     test "it deletes the friendship record" do
-      {:ok, %{friendship: friendship}} = accepted_invite()
+      user = %User{id: invited_id} = user_fixture()
+      {:ok, %{friendship: friendship}} = accepted_invite(invited_id)
 
-      assert {:ok, _} = Friendship.remove_friend(friendship)
+      assert {:ok, _} = Friendship.remove_friend(user, friendship.this_id)
     end
   end
 

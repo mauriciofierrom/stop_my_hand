@@ -39,9 +39,21 @@ defmodule StopMyHand.Friendship do
     |> Repo.update()
   end
 
-  def remove_friend(friendship) do
-    friendship
-    |> Repo.delete()
+  def remove_friend(current_user, user_id) do
+    friendship_query = from f in Friendship,
+                       where: f.this_id == ^current_user.id and f.that_id == ^user_id or
+                                f.that_id == ^current_user.id and f.this_id == ^user_id
+    friendship = Repo.one!(friendship_query)
+
+    query = from i in Invite,
+            where: i.invited_id == ^friendship.this_id and i.invitee_id == ^friendship.that_id or
+                     i.invited_id == ^friendship.that_id and i.invitee_id == ^friendship.this_id,
+            where: i.state == :accepted
+
+    Multi.new()
+    |> Multi.delete_all(:delete_invite, query)
+    |> Multi.delete(:delete_friendship, friendship)
+    |> Repo.transaction()
   end
 
   def search_invitable_users(username, current_user) do
