@@ -588,6 +588,16 @@ defmodule StopMyHandWeb.CoreComponents do
     """
   end
 
+  slot :inner_block, require: true
+
+  def dropdown_item(assigns) do
+    ~H"""
+    <div class="block px-4 py-2 text-sm text-gray-700 cursor-pointer" role="menu-item" tab-index="-1">
+      <%= render_slot(@inner_block) %>
+    </div>
+    """
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do
