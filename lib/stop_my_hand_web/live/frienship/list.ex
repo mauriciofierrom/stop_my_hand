@@ -1,8 +1,10 @@
 defmodule StopMyHandWeb.Friendship.List do
   use StopMyHandWeb, :live_view
   alias StopMyHand.Friendship
+  alias StopMyHand.Accounts
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHandWeb.Dropdown
+  alias StopMyHandWeb.Endpoint
 
   def render(assigns) do
     ~H"""
@@ -38,6 +40,9 @@ defmodule StopMyHandWeb.Friendship.List do
 
   def mount(_params, _session, socket) do
     current_user = socket.assigns.current_user
+
+    Endpoint.subscribe("friendlist:#{current_user.id}")
+
     {:ok, socket
     |> assign_async(:invites, fn -> {:ok, %{invites: Friendship.get_pending_invites(current_user.id)}} end)
     |> assign_async(:friends, fn -> {:ok, %{friends: Friendship.get_friends(current_user.id)}} end)}
@@ -48,8 +53,13 @@ defmodule StopMyHandWeb.Friendship.List do
     accept_result = Friendship.accept_invite(invite)
     case accept_result do
       {:ok, _} ->
+        current_user = socket.assigns.current_user
+
         %AsyncResult{result: invites} = socket.assigns.invites
         %AsyncResult{result: friends} = socket.assigns.friends
+
+        Endpoint.broadcast("friendlist:#{invite.invitee_id}", "invite_accepted", %{invited_id: current_user.id})
+
         {:noreply, socket
         |> assign_async(:invites, fn -> {:ok, %{invites: Enum.filter(invites, &(&1.invitee.id != invite.invitee.id))}} end)
         |> assign_async(:friends, fn -> {:ok, %{friends: Enum.sort([invite.invitee | friends])}} end)
@@ -69,6 +79,28 @@ defmodule StopMyHandWeb.Friendship.List do
           |> put_flash(:info, "Friend removed")}
       _ -> {:noreply, put_flash(socket, :error, "Error removing friend")}
     end
+  end
+
+  def handle_info(%{event: "invite_accepted", payload: %{invited_id: invited_id}}, socket) do
+    invited = Accounts.get_user!(invited_id)
+
+    %AsyncResult{result: invites} = socket.assigns.invites
+    %AsyncResult{result: friends} = socket.assigns.friends
+
+    {:noreply, socket
+    |> assign_async(:invites, fn -> {:ok, %{invites: Enum.filter(invites, &(&1.invitee.id != invited_id))}} end)
+    |> assign_async(:friends, fn -> {:ok, %{friends: Enum.sort([invited | friends])}} end)
+    |> put_flash(:info, "Invitation accepted by: #{invited.username}")}
+  end
+
+  def handle_info(%{event: "invite_received", payload: %{invite_id: invite_id}}, socket) do
+    invite = Friendship.get_invite_with_invitee(invite_id)
+
+    %AsyncResult{result: invites} = socket.assigns.invites
+
+    {:noreply, socket
+    |> assign_async(:invites, fn -> {:ok, %{invites: Enum.sort([invite | invites])}} end)
+    |> put_flash(:info, "Invitation received")}
   end
 
   defp invite_item(assigns) do
