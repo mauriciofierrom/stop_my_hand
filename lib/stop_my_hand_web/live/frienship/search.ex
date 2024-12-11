@@ -2,6 +2,7 @@ defmodule StopMyHandWeb.Friendship.Search do
   use StopMyHandWeb, :live_view
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHand.Friendship
+  alias StopMyHandWeb.Endpoint
 
   def render(assigns) do
     ~H"""
@@ -31,7 +32,6 @@ defmodule StopMyHandWeb.Friendship.Search do
     {:ok, assign(socket, :results, AsyncResult.ok([]))}
   end
 
-  @spec handle_event(<<_::104>>, nil | maybe_improper_list() | map(), map()) :: {:noreply, map()}
   def handle_event("search_friend", %{"search_friend" => ""}, socket) do
     {:noreply, socket |> assign(:results, AsyncResult.ok([]))}
   end
@@ -56,9 +56,12 @@ defmodule StopMyHandWeb.Friendship.Search do
     current_user = socket.assigns.current_user
     res = Friendship.send_invite(%{invitee_id: current_user.id, invited_id: userid})
     case res do
-      {:ok, _} ->
+      {:ok, invite} ->
         %{result: result} = socket.assigns.results
         filtered = Enum.filter(result, fn user -> user.id == userid end)
+
+        Endpoint.broadcast("friendlist:#{userid}", "invite_received", %{invite_id: invite.id})
+
         {:noreply, put_flash(socket, :info, "Invitation sent") |> assign(:results, AsyncResult.ok(filtered))}
       _ -> {:noreply, put_flash(socket, :error, "Error when sending invite")}
     end
