@@ -52,7 +52,8 @@ defmodule StopMyHand.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:ex_doc, "~> 0.25.0", only: :dev},
-      {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false}
+      {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
