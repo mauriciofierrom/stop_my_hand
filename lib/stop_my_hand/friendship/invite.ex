@@ -50,9 +50,10 @@ defmodule StopMyHand.Friendship.Invite do
         now = DateTime.utc_now
         # TODO: This requires timezone handling
         diff = DateTime.diff(now, DateTime.from_naive!(updated_at, "Etc/UTC"), :hour)
-        cond do
-          diff >= 24 -> changeset
-          true -> add_error(changeset, "inviting again too soon", "Only one invitation per 24 hours can be sent")
+        if diff >= 24 do
+          changeset
+        else
+          add_error(changeset, "inviting again too soon", "Only one invitation per 24 hours can be sent")
         end
     end
   end
