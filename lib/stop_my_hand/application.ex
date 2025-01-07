@@ -14,6 +14,8 @@ defmodule StopMyHand.Application do
       StopMyHand.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: StopMyHand.PubSub},
+      # Start the Presennce system
+      StopMyHandWeb.Presence,
       # Cache manager after Presence
       StopMyHand.Cache,
       # Start Finch
