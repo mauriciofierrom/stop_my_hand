@@ -60,4 +60,15 @@ defmodule StopMyHand.FriendshipFixtures do
 
     Friendship.reject_invite(invite)
   end
+
+  def friendship() do
+    %User{id: invitee_id} = user1 = user_fixture()
+    %User{id: invited_id} = user2 = user_fixture()
+
+    {:ok, invite} = Friendship.send_invite(%{invitee_id: invitee_id, invited_id: invited_id})
+
+    Friendship.accept_invite(invite)
+
+    {user1, user2}
+  end
 end
