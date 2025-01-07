@@ -31,5 +31,13 @@ config :swoosh, :api_client, false
 # Print only warnings and errors during test
 config :logger, level: :warning
 
+# Useful sometimes
+# config :logger,
+#   backends: [:console],
+#   compile_time_purge_matching: [
+#     [level_lower_than: :debug]
+#   ]
+
+
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
