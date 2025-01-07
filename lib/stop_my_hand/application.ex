@@ -14,6 +14,8 @@ defmodule StopMyHand.Application do
       StopMyHand.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: StopMyHand.PubSub},
+      # Cache manager after Presence
+      StopMyHand.Cache,
       # Start Finch
       {Finch, name: StopMyHand.Finch},
       # Start the Endpoint (http/https)
