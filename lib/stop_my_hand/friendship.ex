@@ -76,10 +76,13 @@ defmodule StopMyHand.Friendship do
   end
 
   def get_friends(user_id) do
-    query = from f in Friendship,
-              join: u in User, on: u.id == f.this_id or u.id == f.that_id,
-              where: u.id != ^user_id,
-              select: u
+    query = from [f, u] in friends_query(user_id), select: u, order_by: [asc: u.username]
     Repo.all(query)
+  end
+
+  defp friends_query(user_id) do
+    from f in Friendship,
+                  join: u in User, on: u.id == f.this_id or u.id == f.that_id,
+                  where: u.id != ^user_id
   end
 end
