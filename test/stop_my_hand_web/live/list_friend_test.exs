@@ -3,7 +3,9 @@ defmodule StopMyHandWeb.ListFriendTest do
   import Phoenix.LiveViewTest
   import StopMyHand.AccountsFixtures
   import StopMyHand.FriendshipFixtures
+
   alias StopMyHand.Repo
+  alias StopMyHand.Cache
 
   describe "List current user's friends and invites" do
     test "shows nothing when there's no pending invites", %{conn: conn} do
@@ -72,6 +74,42 @@ defmodule StopMyHandWeb.ListFriendTest do
 
       assert result =~ "..."
       assert result =~ "Delete"
+    end
+
+    @tag :focus
+    test "online status", %{conn: conn} do
+      {user1, user2} = friendship()
+
+      {:ok, lv, _html} = live(log_in_user(conn, user1), "/list")
+
+      result = render_async(lv)
+
+      assert result =~ user2.username
+      assert result =~ "offline"
+
+      assert Cache.get_friend_id_list(user1.id) == [{user2.id, :offline}]
+
+      {:ok, lv2, _html} = live(log_in_user(conn, user2), "/list")
+
+      result2 = render_async(lv2)
+
+      assert result2 =~ user1.username
+      assert result2 =~ "online"
+
+      send(lv.pid, %{event: "join", payload: {1, {2, user2.id}}})
+      assert Cache.get_friend_id_list(user1.id) == [{user2.id, :online}]
+
+      new_result = render_async(lv)
+
+      assert new_result =~ "online"
+
+      send(lv.pid, %{event: "leave", payload: {1, {2, user2.id}}})
+
+      final_result = render_async(lv)
+
+      assert final_result =~ user2.username
+      assert final_result =~ "offline"
+      assert Cache.get_friend_id_list(user1.id) == [{user2.id, :offline}]
     end
   end
 end
