@@ -4,8 +4,9 @@ defmodule StopMyHandWeb.ListFriendTest do
   import StopMyHand.AccountsFixtures
   import StopMyHand.FriendshipFixtures
 
-  alias StopMyHand.Repo
+  alias StopMyHand.Game
   alias StopMyHand.Cache
+  alias StopMyHand.Repo
 
   describe "List current user's friends and invites" do
     test "shows nothing when there's no pending invites", %{conn: conn} do
@@ -76,7 +77,6 @@ defmodule StopMyHandWeb.ListFriendTest do
       assert result =~ "Delete"
     end
 
-    @tag :focus
     test "online status", %{conn: conn} do
       {user1, user2} = friendship()
 
@@ -110,6 +110,17 @@ defmodule StopMyHandWeb.ListFriendTest do
       assert final_result =~ user2.username
       assert final_result =~ "offline"
       assert Cache.get_friend_id_list(user1.id) == [{user2.id, :offline}]
+    end
+
+    test "game notification", %{conn: conn} do
+      {invitee, invited} = friendship()
+
+      {:ok, invited_lv, _htl} = live(log_in_user(conn, invited), "/list")
+      Game.create_match(invitee, %{creator_id: invitee.id, players: [%{user_id: invited.id}]})
+
+      result = render_async(invited_lv)
+
+      assert result =~ invitee.username
     end
   end
 end
