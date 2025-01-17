@@ -1,5 +1,5 @@
 defmodule StopMyHandWeb.Dropdown do
-  use Phoenix.LiveComponent
+  use StopMyHandWeb, :live_component
   alias Phoenix.LiveView.JS
 
   slot :button, required: true
