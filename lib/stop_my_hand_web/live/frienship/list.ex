@@ -6,7 +6,10 @@ defmodule StopMyHandWeb.Friendship.List do
   alias StopMyHandWeb.Dropdown
   alias StopMyHandWeb.Endpoint
   alias StopMyHandWeb.Presence
+  alias StopMyHandWeb.Game.CreateMatch
   alias StopMyHand.Cache
+
+  @notification "notification"
 
   def render(assigns) do
     ~H"""
@@ -37,15 +40,24 @@ defmodule StopMyHandWeb.Friendship.List do
         <% end %>
       </div>
     </.async_result>
+    <button class="btn btn-blue" id="create-match-btn" phx-click={show_modal("create-match-modal")}>Start Match!</button>
+    <.live_component module={CreateMatch} id="create_match" friends={@friends} current_user={assigns.current_user} />
+    <.game_invite game_id={@game_invite.game_id} invitee_handle={@game_invite.invitee_handle} show={@game_invite.show} />
     """
   end
 
   def mount(_params, _session, socket) do
     current_user = socket.assigns.current_user
 
+    # Subscribe to the current user's notification channel
+    # TODO: Move to the handle_param stuff
+    Endpoint.subscribe("#{@notification}:#{current_user.id}")
+
     {:ok, socket
     |> assign_async(:invites, fn -> {:ok, %{invites: Friendship.get_pending_invites(current_user.id)}} end)
     |> assign(:friends, AsyncResult.ok([])) #}
+    |> assign(:show_create_match_modal, false)
+    |> assign(:game_invite, %{game_id: nil, invitee_handle: "", show: false})
     |> start_async(:fetch_friends, fn -> Friendship.get_friends(current_user.id) end)}
   end
 
@@ -54,7 +66,7 @@ defmodule StopMyHandWeb.Friendship.List do
 
     {fs, ls} = Enum.reduce(friends, {[], []}, fn friend, {fs, ls} ->
       status = Presence.get_status(friend.id)
-      {Enum.into(%{friend.id => %{user: friend, status: status}}, fs), [{friend.id, status}|ls]}
+      {[{friend.id, %{user: friend, status: status}}|fs], [{friend.id, status}|ls]}
     end)
 
     Cache.load_online_friend_list(%{user_id: current_user.id, list: ls})
@@ -141,6 +153,15 @@ defmodule StopMyHandWeb.Friendship.List do
     {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
   end
 
+  def handle_info(%{event: "game_invite", payload: %{game_id: game_id, invitee_handle: handle}}, socket) do
+    {:noreply, assign(socket, :game_invite, %{game_id: game_id, invitee_handle: handle, show: true})}
+  end
+
+  def create_match(js \\ %JS{}) do
+    js
+    |> JS.show(to: "#create-match-modal")
+  end
+
   defp invite_item(assigns) do
     ~H"""
     <div
@@ -171,6 +192,19 @@ defmodule StopMyHandWeb.Friendship.List do
           </.dropdown_item>
         </.live_component>
       </div>
+    </div>
+    """
+  end
+
+  defp game_invite(assigns) do
+    ~H"""
+    <div class="w-1/4 h-full">
+      <.modal id="game-invite" show={assigns.show}>
+        <h1><strong><%= assigns.invitee_handle %></strong> invites you to a match!</h1>
+        <div>
+          <.link>Go!</.link>
+        </div>
+      </.modal>
     </div>
     """
   end
