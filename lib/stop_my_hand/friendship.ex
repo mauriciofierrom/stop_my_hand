@@ -61,13 +61,13 @@ defmodule StopMyHand.Friendship do
     as: :user,
     where: not exists(
       from(f in Friendship,
-           where: f.this_id == parent_as(:user).id or f.that_id == parent_as(:user).id,
+           where: (f.this_id == parent_as(:user).id and f.that_id == ^current_user.id) or (f.this_id == ^current_user.id and f.that_id == parent_as(:user).id),
            select: 1
       )
     ),
     where: not exists(
       from(i in Invite,
-           where: i.invitee_id == parent_as(:user).id or i.invited_id == parent_as(:user).id,
+           where: (i.invitee_id == parent_as(:user).id and i.invited_id == ^current_user.id) or (i.invitee_id == ^current_user.id and i.invited_id == parent_as(:user).id),
            select: 1
       )
     ),
@@ -82,7 +82,7 @@ defmodule StopMyHand.Friendship do
 
   defp friends_query(user_id) do
     from f in Friendship,
-                  join: u in User, on: u.id == f.this_id or u.id == f.that_id,
-                  where: u.id != ^user_id
+    join: u in User, on: (u.id == f.this_id and f.that_id == ^user_id) or (u.id == f.that_id and f.this_id == ^user_id),
+    where: u.id != ^user_id
   end
 end
