@@ -202,7 +202,7 @@ defmodule StopMyHandWeb.Friendship.List do
       <.modal id="game-invite" show={assigns.show}>
         <h1><strong><%= assigns.invitee_handle %></strong> invites you to a match!</h1>
         <div>
-          <.link>Go!</.link>
+          <.link id="game_invite" href={~p"/lobby/#{assigns.game_id || ""}"}>Go!</.link>
         </div>
       </.modal>
     </div>
