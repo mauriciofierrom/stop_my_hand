@@ -122,5 +122,20 @@ defmodule StopMyHandWeb.ListFriendTest do
 
       assert result =~ invitee.username
     end
+
+    test "game notification redirects to lobby", %{conn: conn} do
+      {invitee, invited} = friendship()
+
+      {:ok, invited_lv, _htl} = live(log_in_user(conn, invited), "/list")
+      {:ok, match} = Game.create_match(invitee, %{creator_id: invitee.id, players: [%{user_id: invited.id}]})
+
+      result = render_async(invited_lv)
+
+      assert result =~ invitee.username
+
+      assert {:error, {:redirect, %{to: "/lobby/"<> match_id}}} = invited_lv |> element("#game_invite") |> render_click()
+
+      assert match_id == "#{match.id}"
+    end
   end
 end

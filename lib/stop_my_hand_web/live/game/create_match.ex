@@ -55,8 +55,13 @@ defmodule StopMyHandWeb.Game.CreateMatch do
   end
 
   def handle_event("save", params, socket) do
-    Game.create_match(socket.assigns.current_user, params)
-    {:noreply, socket}
+    case Game.create_match(socket.assigns.current_user, params) do
+      {:ok, match} ->
+        {:noreply, push_navigate(socket, to: "/lobby/#{match.id}")}
+      {:error, errors} ->
+        IO.inspect(errors)
+        {:noreply, socket}
+    end
   end
 
   def handle_event("pick_user", %{"userid" => userid, "value" => "on"}, socket) do
