@@ -2,11 +2,11 @@ defmodule StopMyHand.Game.Match do
   use Ecto.Schema
   import Ecto.Changeset
   alias StopMyHand.Game.Player
+  alias StopMyHand.Accounts.User
 
   schema "matches" do
 
-    field :creator_id, :id
-
+    belongs_to :creator, User
     has_many :players, Player, foreign_key: :match_id
 
     timestamps()
