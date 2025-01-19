@@ -20,7 +20,7 @@ defmodule StopMyHandWeb.Presence do
     {:ok, %{}}
   end
 
-  def handle_metas(_topic, %{joins: joins, leaves: leaves}, _presences, state) do
+  def handle_metas("online_users", %{joins: joins, leaves: leaves}, _presences, state) do
     for {target_user_id, _presence} <- joins do
       {user_id, _} = Integer.parse(target_user_id)
       msg = {__MODULE__, {:join, user_id}}
@@ -35,6 +35,24 @@ defmodule StopMyHandWeb.Presence do
 
       Cache.get_friend_id_list(user_id)
       |> Enum.each(fn {friend_id, _status} -> Endpoint.broadcast("friends:#{friend_id}", "leave", msg) end)
+    end
+
+    {:ok, state}
+  end
+
+  def handle_metas("match:" <> match_id, %{joins: joins, leaves: leaves}, _presences, state) do
+    for {target_user_id, _presence} <- joins do
+      {user_id, _} = Integer.parse(target_user_id)
+      msg = {__MODULE__, {:join, user_id}}
+
+      Endpoint.broadcast("match_changes:#{match_id}", "join", msg)
+    end
+
+    for {target_user_id, _presence} <- leaves do
+      {user_id, _} = Integer.parse(target_user_id)
+      msg = {__MODULE__, {:leave, user_id}}
+
+      Endpoint.broadcast("match_changes:#{match_id}", "leave", msg)
     end
 
     {:ok, state}
