@@ -70,6 +70,7 @@ defmodule StopMyHandWeb.Router do
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
       live "/start", Friendship.Search
       live "/list", Friendship.List
+      live "/lobby/:match_id", Game.Lobby
     end
   end
 
