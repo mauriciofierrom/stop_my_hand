@@ -8,7 +8,7 @@ defmodule StopMyHand.Game do
 
   alias StopMyHand.Repo
   alias StopMyHandWeb.Endpoint
-  alias StopMyHand.Game.{Match}
+  alias StopMyHand.Game.{Match, Player}
 
   def create_match(current_user, attrs) do
     case insert_match(attrs) do
@@ -17,6 +17,16 @@ defmodule StopMyHand.Game do
         {:ok, match}
       {:error, changeset} -> {:error, changeset.errors}
     end
+  end
+
+  def get_match_players(match_id) do
+    (from p in Player,
+    where: p.match_id == ^match_id,
+    select: p) |> Repo.all |> Repo.preload(:user)
+  end
+
+  def get_match(match_id) do
+    Repo.get!(Match, match_id)
   end
 
   defp insert_match(attrs) do
