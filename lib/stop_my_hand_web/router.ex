@@ -72,6 +72,7 @@ defmodule StopMyHandWeb.Router do
       live "/start", Friendship.Search
       live "/list", Friendship.List
       live "/lobby/:match_id", Game.Lobby
+      live "/match/:match_id", Game.Match
     end
   end
 

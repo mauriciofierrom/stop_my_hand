@@ -17,15 +17,19 @@ defmodule StopMyHandWeb.Game.Lobby do
             <.player_status player={player} status={status} current_user={assigns.current_user}/>
         <% end %>
       </div>
-      <.button disabled={Enum.empty?(Enum.filter(players, fn {_p, s} -> s == :online end))}>Start!</.button>
+      <%= if @match.creator_id == assigns.current_user.id do %>
+        <.button disabled={can_start_game(@match.creator_id, assigns.current_user.id, players)} phx-click="play">
+          Play!
+        </.button>
+      <% end %>
     </.async_result>
     """
   end
 
   def mount(params, _session, socket) do
-    match_topic = "match:#{params["match_id"]}"
+    match = Game.get_match(params["match_id"])
+    match_topic = "match:#{match.id}"
     current_user = socket.assigns.current_user
-    players = Game.get_match_players(params["match_id"])
 
     if connected?(socket) do
       Presence.track(socket.transport_pid, match_topic, current_user.id, %{})
@@ -34,7 +38,7 @@ defmodule StopMyHandWeb.Game.Lobby do
 
     online_users = Presence.list(match_topic)
 
-    players_with_status = Enum.map(players, fn player ->
+    players_with_status = Enum.map(match.players, fn player ->
       status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
       {player, status}
     end)
@@ -42,7 +46,13 @@ defmodule StopMyHandWeb.Game.Lobby do
     {:ok,
      socket
      |> assign(:players, AsyncResult.ok(players_with_status))
+     |> assign(:match, match)
     }
+  end
+
+  def handle_event("play", _params, socket) do
+    Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
+    {:noreply, push_navigate(socket, to: "/match/#{socket.assigns.match.id}")}
   end
 
   def handle_info(%{event: "join", payload: {_, {_, user_id}}}, socket) do
@@ -59,6 +69,10 @@ defmodule StopMyHandWeb.Game.Lobby do
     new_players_status = handle_presence(players, user_id, :offline)
 
     {:noreply, assign(socket, :players, AsyncResult.ok(new_players_status))}
+  end
+
+  def handle_info(%{event: "game_start", payload: _payload}, socket) do
+    {:noreply, push_navigate(socket, to: "/match/#{socket.assigns.match.id}")}
   end
 
   defp player_status(assigns) do
@@ -92,5 +106,10 @@ defmodule StopMyHandWeb.Game.Lobby do
         {player, status}
       end
     end)
+  end
+
+  defp can_start_game(match_creator_id, current_user_id, players_with_status) do
+    match_creator_id == current_user_id &&
+    Enum.empty?(Enum.filter(players_with_status, fn {_p, s} -> s == :online end))
   end
 end

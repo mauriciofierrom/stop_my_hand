@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-// import "./user_socket.js"
+import { createMatch } from "./game_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -40,3 +40,6 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+window.addEventListener("phx:connect_match", ({detail: { match_id, timestamp }}) => {
+  let channel = createMatch({matchId: match_id, timestamp})
+})
