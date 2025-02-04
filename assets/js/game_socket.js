@@ -63,17 +63,29 @@ export function createMatch({matchId, timestamp}) {
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
     .receive("error", resp => { console.log("Unable to join", resp) })
-  channel.on("start_countdown", ({ at }) => {
-    console.log(`At: ${at}`)
+  channel.on("start_countdown", ({ at, first_letter }) => {
+    console.log(`At: ${at}. First letter: ${first_letter}`)
     let counter = 3
     const intervalId = setInterval(() => {
       counter--
       if(counter > 0) {
         document.querySelector("#counter").innerHTML = counter
       } else {
-        document.querySelector("#counter").classList.add("hidden")
-        document.querySelector("#game").classList.remove("hidden")
         clearInterval(intervalId)
+
+        // Hide counter
+        document.querySelector("#counter").classList.add("hidden")
+
+        // Show game element
+        const gameElement = document.querySelector("#game")
+        gameElement.classList.remove("hidden")
+
+        // Pick new game letter
+        const letterElement = document.querySelector("#letter")
+
+        // Set the letter element
+        letterElement.innerHTML = `${first_letter}`
+        gameElement.appendChild(letterElement)
       }
     }, 1000)
   })

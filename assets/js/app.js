@@ -40,6 +40,6 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
-window.addEventListener("phx:connect_match", ({detail: { match_id, timestamp }}) => {
-  let channel = createMatch({matchId: match_id, timestamp})
+window.addEventListener("phx:connect_match", ({detail: { match_id, timestamp, first_letter }}) => {
+  let channel = createMatch({matchId: match_id, timestamp, first_letter})
 })
