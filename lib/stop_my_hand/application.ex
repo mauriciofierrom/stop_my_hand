@@ -20,6 +20,10 @@ defmodule StopMyHand.Application do
       StopMyHand.Cache,
       # Start Finch
       {Finch, name: StopMyHand.Finch},
+      # Add a Registry
+      {Registry, keys: :unique, name: StopMyHand.Registry},
+      # Add a DynamicSupervisor
+      {DynamicSupervisor, strategy: :one_for_one, name: StopMyHand.DynamicSupervisor},
       # Start the Endpoint (http/https)
       StopMyHandWeb.Endpoint
       # Start a worker by calling: StopMyHand.Worker.start_link(arg)
