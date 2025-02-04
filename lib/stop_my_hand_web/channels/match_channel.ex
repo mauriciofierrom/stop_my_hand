@@ -1,36 +1,31 @@
 defmodule StopMyHandWeb.MatchChannel do
+  @moduledoc """
+  A Channel to drive the match mechanics
+  """
   use StopMyHandWeb, :channel
 
   alias StopMyHand.Game
+  alias StopMyHand.MatchDriver
 
   @impl true
   def join("match:"<>match_id, payload, socket) do
     IO.inspect("joined")
-    updated_joined = update_joined_ids(socket, socket.assigns.user)
 
-    if Enum.all?(updated_joined, &Enum.member?(updated_joined, &1)) do
+    MatchDriver.player_joined(match_id, socket.assigns.user)
+
+    if MatchDriver.all_players_in?(match_id) do
       send(self(), :all_in)
     end
-    {:ok, assign(socket, :joined, updated_joined)}
-  end
 
-  # Channels can be used in a request/response fashion
-  # by sending replies to requests from the client
-  @impl true
-  def handle_in("ping", payload, socket) do
-    {:reply, {:ok, payload}, socket}
-  end
-
-  # It is also common to receive messages from the client and
-  # broadcast to everyone in the current topic (match:lobby).
-  @impl true
-  def handle_in("shout", payload, socket) do
-    broadcast(socket, "shout", payload)
-    {:noreply, socket}
+    {:ok, assign(socket, :match_id, match_id)}
   end
 
   def handle_info(:all_in, socket) do
-    broadcast!(socket, "start_countdown", %{at: System.system_time(:millisecond) + 3000})
+    {:ok, letter} = MatchDriver.pick_letter(socket.assigns.match_id)
+
+    broadcast!(socket, "start_countdown", %{
+          at: System.system_time(:millisecond) + 3000,
+          first_letter: letter})
 
     {:noreply, socket}
   end
