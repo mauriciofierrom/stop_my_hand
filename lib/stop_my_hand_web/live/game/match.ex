@@ -1,8 +1,12 @@
 defmodule StopMyHandWeb.Game.Match do
+  @moduledoc """
+  The view where actual matches take place
+  """
   use StopMyHandWeb, :live_view
 
   alias StopMyHand.Game
   alias StopMyHand.Game.Player
+  alias StopMyHand.Game.Round
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.MatchDriver
 
@@ -13,6 +17,14 @@ defmodule StopMyHandWeb.Game.Match do
     <div id="game" class="hidden">
       GAME IN PROGRESS
       <div id="letter"></div>
+      <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
+        <.input field={f[:name]} label="Name" />
+        <.input field={f[:last_name]} label="Last Name" />
+        <.input field={f[:city]} label="City" />
+        <.input field={f[:color]} label="Color" />
+        <.input field={f[:animal]} label="Animal" />
+        <.input field={f[:thing]} label="Thing" />
+      </.simple_form>
     </div>
     """
   end
@@ -22,6 +34,7 @@ defmodule StopMyHandWeb.Game.Match do
 
     {:ok, socket
     |> assign(:match_id, match_id)
+    |> assign(:round, %Round{})
     |> start_async(:fetch_players, fn -> Game.get_match_players(match_id) end)
     }
   end
