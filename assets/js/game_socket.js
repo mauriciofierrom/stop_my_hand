@@ -60,6 +60,7 @@ socket.connect()
 export function createMatch({matchId, timestamp}) {
   const offset = Math.abs(Date.now() - timestamp)
   let channel = socket.channel(`match:${matchId}`, {clockOffset: offset})
+  const gameFields = document.querySelectorAll('#round input[type="text"]')
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
     .receive("error", resp => { console.log("Unable to join", resp) })
@@ -85,13 +86,53 @@ export function createMatch({matchId, timestamp}) {
 
         // Set the letter element
         letterElement.innerHTML = `${first_letter}`
-        gameElement.appendChild(letterElement)
+        addEvents(first_letter, gameFields, channel)
       }
     }, 1000)
+  })
+  channel.on("round_finished", ({letter}) => {
+    onRoundEnd(letter, gameFields, channel)
   })
 
   return channel
 }
 
+const handleEnterEvent = (channel, letter, inputs) => {
+  return (event => {
+    if(event.key === "Enter" && validate(letter, inputs)) {
+      channel.push("player_finished", {letter})
+    }
+  })
+}
+
+const isValid = (letter, input) =>
+      input.value && input.value[0].toUpperCase() === letter.toUpperCase()
+
+const validate = (letter, inputs) =>
+  Array.from(inputs).every(i => isValid(letter, i))
+
+const addEvents = (letter, inputs, channel) => {
+  inputs.forEach(input =>
+    input.addEventListener("keypress", handleEnterEvent(channel, letter, inputs)))
+}
+
+const removeEvents = (letter, inputs, channel) => {
+  inputs.forEach(input => removeEventListener("keypress", handleEnterEvent(channel, letter, inputs)))
+}
+
+const calculateScore = (letter, inputs) =>
+  Array.from(inputs).reduce((acc, i) => acc + (isValid(letter, i) ? 100 : 0), 0)
+
+const onRoundEnd = (letter, inputs, channel) => {
+  console.log("onRoundEnd")
+  const score = calculateScore(letter, inputs)
+  inputs.forEach(i => {
+    i.classList.add("disabled")
+    i.value = ""
+    i.disabled = true
+  })
+  removeEvents(letter, inputs, channel)
+  alert(`Score: ${score}`)
+}
 
 export default socket
