@@ -20,6 +20,13 @@ defmodule StopMyHandWeb.MatchChannel do
     {:ok, assign(socket, :match_id, match_id)}
   end
 
+  def handle_in("player_finished", params, socket) do
+    IO.inspect("player_finished received")
+    broadcast!(socket, "round_finished", params)
+
+    {:noreply, socket}
+  end
+
   def handle_info(:all_in, socket) do
     {:ok, letter} = MatchDriver.pick_letter(socket.assigns.match_id)
 
