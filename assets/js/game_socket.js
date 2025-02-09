@@ -87,6 +87,9 @@ export function createMatch({matchId, timestamp}) {
         // Set the letter element
         letterElement.innerHTML = `${first_letter}`
         addEvents(first_letter, gameFields, channel)
+
+        // Actions to perform when round starts
+        onRoundStart(letter, channel)
       }
     }, 1000)
   })
@@ -133,6 +136,26 @@ const onRoundEnd = (letter, inputs, channel) => {
   })
   removeEvents(letter, inputs, channel)
   alert(`Score: ${score}`)
+}
+
+const onRoundStart = (letter, channel) => {
+  const roundTimeout = document.querySelector('#round-countdown')
+  const toMinute = (seconds) => Math.floor(seconds / 60)
+  const toSecondsLeft = (seconds) => seconds % 60
+  const formatTime = (seconds) => `${toMinute(seconds).toString().padStart(2, '0')}:${toSecondsLeft(seconds).toString().padStart(2, '0')}`
+  let countdown = 180
+
+  roundTimeout.innerHTML = formatTime(countdown)
+  roundTimeout.classList.remove("hidden")
+
+  setInterval(() => {
+    countdown -= 1
+    roundTimeout.innerHTML = formatTime(countdown)
+
+    if(countdown === 0) {
+      channel.push("round_finished", {letter})
+    }
+  }, 1000)
 }
 
 export default socket
