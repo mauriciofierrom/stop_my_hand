@@ -17,6 +17,7 @@ defmodule StopMyHandWeb.Game.Match do
     <div id="game" class="hidden">
       GAME IN PROGRESS
       <div id="letter"></div>
+      <div id="round-countdown"></div>
       <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
         <.input field={f[:name]} label="Name" />
         <.input field={f[:last_name]} label="Last Name" />
