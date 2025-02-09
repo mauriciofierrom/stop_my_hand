@@ -20,7 +20,7 @@ defmodule StopMyHandWeb.MatchChannel do
     {:ok, assign(socket, :match_id, match_id)}
   end
 
-  def handle_in("player_finished", params, socket) do
+  def handle_in("round_finished", params, socket) do
     IO.inspect("player_finished received")
     broadcast!(socket, "round_finished", params)
 
