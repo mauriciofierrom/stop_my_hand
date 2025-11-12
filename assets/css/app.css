@@ -3,3 +3,12 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+@theme {
+    --color-base: #232946;
+    --color-light: #d4d8f0;
+    --color-primary: #b8c1ec;
+    --color-secondary: #fffffe;
+    --color-accent: #eebbc3;
+    --color-stroke: #121629;
+}
