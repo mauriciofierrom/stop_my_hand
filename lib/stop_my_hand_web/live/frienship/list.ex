@@ -180,9 +180,9 @@ defmodule StopMyHandWeb.Friendship.List do
       class={[
         "flex flex-row"
     ]}>
-      <div class="basis--2/3">
+      <div class="basis--2/3 flex flex-row items-baseline gap-2">
         <%= assigns.friend.user.username %>
-        <span class={status_message_class(assigns.friend.status)}><%= assigns.friend.status %></span>
+        <.status_indicator status={assigns.friend.status} />
         <.live_component module={Dropdown} id={assigns.friend.user.id}>
           <:button>
             ...
@@ -209,12 +209,19 @@ defmodule StopMyHandWeb.Friendship.List do
     """
   end
 
-  defp status_message_class(status) do
-    base = ["text-sm italic"]
+  defp status_indicator_class(status) do
     case status do
-      :online -> ["text-green-500" | base]
-      _ -> ["text-gray-500" | base]
+      :online -> "bg-green-500"
+      :offline -> "bg-gray-500"
     end
+  end
+
+  defp status_indicator(assigns) do
+    base = ["w-2.5 h-2.5 rounded-full"]
+    le_class = [status_indicator_class(assigns.status) | base]
+    ~H"""
+    <div class={le_class}></div>
+    """
   end
 
   defp handle_presence(current_user, friends, user_id, event) do
