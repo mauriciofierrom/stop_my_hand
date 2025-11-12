@@ -15,6 +15,12 @@ module.exports = {
     extend: {
       colors: {
         brand: "#FD4F00",
+        base: '#232946',
+        light: '#d4d8f0',
+        primary: '#b8c1ec',
+        secondary: '#fffffe',
+        accent: '#eebbc3',
+        stroke: '#121629',
       }
     },
   },
