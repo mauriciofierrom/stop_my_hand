@@ -5,6 +5,7 @@ defmodule StopMyHandWeb.PageController do
   def home(conn, _params) do
     # The home page is often custom made,
     # so skip the default app layout.
-    render(conn, :home, layout: false)
+    page = if conn.assigns.current_user, do: :main, else: :home
+    render(conn, page, layout: false)
   end
 end
