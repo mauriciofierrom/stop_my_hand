@@ -3,6 +3,6 @@ defmodule StopMyHandWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Welcome to Stop My Hand!"
+    assert html_response(conn, 200) =~ "STOP MY HAND"
   end
 end
