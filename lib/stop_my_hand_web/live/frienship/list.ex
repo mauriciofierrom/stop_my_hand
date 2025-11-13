@@ -88,7 +88,7 @@ defmodule StopMyHandWeb.Friendship.List do
         %AsyncResult{result: invites} = socket.assigns.invites
         %AsyncResult{result: friends} = socket.assigns.friends
 
-        Endpoint.broadcast("friendlist:#{invite.invitee_id}", "invite_accepted", %{invited_id: current_user.id})
+        Endpoint.broadcast("friends:#{invite.invitee_id}", "invite_accepted", %{invited_id: current_user.id})
 
         {:noreply, socket
         |> assign_async(:invites, fn -> {:ok, %{invites: Enum.filter(invites, &(&1.invitee.id != invite.invitee.id))}} end)

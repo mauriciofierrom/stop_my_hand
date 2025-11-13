@@ -60,7 +60,7 @@ defmodule StopMyHandWeb.Friendship.Search do
         %{result: result} = socket.assigns.results
         filtered = Enum.filter(result, fn user -> user.id == userid end)
 
-        Endpoint.broadcast("friendlist:#{userid}", "invite_received", %{invite_id: invite.id})
+        Endpoint.broadcast("friends:#{userid}", "invite_received", %{invite_id: invite.id})
 
         {:noreply, put_flash(socket, :info, "Invitation sent") |> assign(:results, AsyncResult.ok(filtered))}
       _ -> {:noreply, put_flash(socket, :error, "Error when sending invite")}
