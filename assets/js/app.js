@@ -44,3 +44,10 @@ window.liveSocket = liveSocket
 window.addEventListener("phx:connect_match", ({detail: { match_id, timestamp, first_letter }}) => {
   channel = createMatch({matchId: match_id, timestamp, first_letter})
 })
+
+// WARN: A listener suggested in: https://elixirforum.com/t/how-to-close-modal/54331/7
+window.addEventListener("phx:js-exec", ({detail}) => {
+  document.querySelectorAll(detail.to).forEach(el => {
+      liveSocket.execJS(el, el.getAttribute(detail.attr))
+  })
+})
