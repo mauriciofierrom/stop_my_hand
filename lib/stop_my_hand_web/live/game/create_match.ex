@@ -15,11 +15,11 @@ defmodule StopMyHandWeb.Game.CreateMatch do
     ~H"""
     <div class="w-1/4 h-full">
       <.modal id="create-match-modal">
-        <h1>Create Match</h1>
+        <h1 class="text-2xl">Create Match</h1>
         <.async_result :let={friends} assign={@friends}>
           <:loading>Loading Friends...</:loading>
           <:failed :let={_failure}>There was an error fetching invites</:failed>
-          <div class={[]}>
+          <div class={["flex mt-8 gap-4"]}>
             <%= for {_n, friend} <- friends do %>
               <.friend_item_field friend={friend} target={@myself} changeset={@changeset}/>
             <% end %>
@@ -86,13 +86,16 @@ defmodule StopMyHandWeb.Game.CreateMatch do
 
   def friend_item_field(assigns) do
     ~H"""
-      <span><%= assigns.friend.user.username %></span>
-      <input type="checkbox"
-        phx-click="pick_user"
-        phx-value-userid={assigns.friend.user.id}
-        phx-target={@target}
-        checked={%{user_id: "#{assigns.friend.user.id}"} in Enum.map(assigns.changeset.changes[:players], &(&1.changes))}
-        />
+      <div class="flex gap-4 items-center justify-center">
+        <span class="text-xl text-bold"><%= assigns.friend.user.username %></span>
+        <input type="checkbox"
+          phx-click="pick_user"
+          phx-value-userid={assigns.friend.user.id}
+          phx-target={@target}
+          checked={%{user_id: "#{assigns.friend.user.id}"} in Enum.map(assigns.changeset.changes[:players], &(&1.changes))}
+          class="rounded text-primary focus:ring-accent"
+          />
+      </div>
     """
   end
 
