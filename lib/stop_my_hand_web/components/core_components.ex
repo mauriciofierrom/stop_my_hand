@@ -50,7 +50,7 @@ defmodule StopMyHandWeb.CoreComponents do
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
       class={"relative z-50 " <> if @show, do: "", else: "hidden"}
     >
-      <div id={"#{@id}-bg"} class="bg-zinc-50/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div id={"#{@id}-bg"} class="bg-primary/80 fixed inset-0 transition-opacity" aria-hidden="true" />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -66,7 +66,7 @@ defmodule StopMyHandWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class="shadow-light/10 ring-zinc-700/10 relative rounded-2xl bg-base p-14 shadow-lg ring-1 transition"
             >
               <div class="absolute top-6 right-5">
                 <button
