@@ -1,35 +1,42 @@
 defmodule StopMyHandWeb.Friendship.Search do
-  use StopMyHandWeb, :live_view
+  use StopMyHandWeb, :live_component
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHand.Friendship
   alias StopMyHandWeb.Endpoint
 
   def render(assigns) do
     ~H"""
-    <h1>Search friend</h1>
-    <.form for={%{}}>
-      <.input id="search_friend" name="search_friend" value={""} phx-change="search_friend" phx-debounce/>
-    </.form>
-    <.async_result :let={results} assign={@results}>
-      <:loading>Loading results...</:loading>
-      <:failed :let={_failure}>there was an error fetching users</:failed>
-      <div class={[
-        "flex flex-col"
-      ]}>
-        <%= if !Enum.empty?(results) do %>
-          <%= for result <- results do %>
-            <.result_item user={result}/>
-          <% end %>
-        <% else %>
-          No results
-        <% end %>
-      </div>
-    </.async_result>
+    <div class="w-1/4 h-full">
+      <.modal id="search-friend">
+        <h1>Search friend</h1>
+        <.form for={%{}}>
+          <.input id="search_friend" name="search_friend" value={""} phx-change="search_friend" phx-target={@myself} phx-debounce/>
+        </.form>
+        <.async_result :let={results} assign={@results}>
+          <:loading>Loading results...</:loading>
+          <:failed :let={_failure}>there was an error fetching users</:failed>
+          <div class={[
+            "flex flex-col mt-8"
+          ]}>
+            <%= if !Enum.empty?(results) do %>
+              <%= for result <- results do %>
+                <.result_item user={result} myself={@myself}/>
+              <% end %>
+            <% else %>
+              No results
+            <% end %>
+          </div>
+        </.async_result>
+      </.modal>
+    </div>
     """
   end
 
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, :results, AsyncResult.ok([]))}
+  def update(assigns, socket) do
+    {:ok, socket
+     |> assign(:results, AsyncResult.ok([]))
+     |> assign(:current_user, assigns.current_user)
+    }
   end
 
   def handle_event("search_friend", %{"search_friend" => ""}, socket) do
@@ -62,7 +69,11 @@ defmodule StopMyHandWeb.Friendship.Search do
 
         Endpoint.broadcast("friends:#{userid}", "invite_received", %{invite_id: invite.id})
 
-        {:noreply, put_flash(socket, :info, "Invitation sent") |> assign(:results, AsyncResult.ok(filtered))}
+        {:noreply,
+         put_flash(socket, :info, "Invitation sent")
+         |> assign(:results, AsyncResult.ok(filtered))
+         |> push_event("js-exec", %{to: "#search-friend", attr: "phx-remove"})
+        }
       _ -> {:noreply, put_flash(socket, :error, "Error when sending invite")}
     end
   end
@@ -71,10 +82,15 @@ defmodule StopMyHandWeb.Friendship.Search do
     ~H"""
     <div
       class={[
-        "flex flex-row"
+        "flex flex-row gap-4"
     ]}>
-      <div class="basis--2/3"><%= assigns.user.username %></div>
-      <button class="btn btn-blue" id={ "invite-#{assigns.user.id}" } phx-hook="ConfirmInvite" data-userid={ assigns.user.id }>Invite</button>
+      <div class="basis--2/3 font-bold text-lg"><%= assigns.user.username %></div>
+      <button
+        class={[
+          "phx-submit-loading:opacity-75 rounded-lg bg-accent hover:bg-primary py-2 px-3",
+          "text-sm font-semibold leading-6 text-black active:text-black/80",
+        ]}
+        id={ "invite-#{assigns.user.id}" } phx-hook="ConfirmInvite" data-userid={ assigns.user.id }>Invite</button>
     </div>
     """
   end
