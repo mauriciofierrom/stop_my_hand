@@ -74,7 +74,6 @@ defmodule StopMyHandWeb.LobbyTest do
       assert result =~ ~r/<button[^>]*disabled[^>]*>/
     end
 
-    @tag :focus
     test "when there's at least one invited player online the Start butotn is enabled", %{conn: conn} do
       match = create_match()
       [first_player|_rest] = match.players

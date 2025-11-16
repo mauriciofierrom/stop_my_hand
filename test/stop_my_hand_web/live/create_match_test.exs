@@ -29,11 +29,11 @@ defmodule StopMyHandWeb.CreateMatchTest do
     test "add checked users only", %{conn: conn} do
       {invitee, invited} = friendship()
 
-      {:ok, invited_lv, _html} = live(log_in_user(conn, invited), "/list")
+      {:ok, invited_lv, _html} = live(log_in_user(conn, invited), "/main")
 
       render_async(invited_lv)
 
-      {:ok, invitee_lv, _html} = live(log_in_user(conn, invitee), "/list")
+      {:ok, invitee_lv, _html} = live(log_in_user(conn, invitee), "/main")
 
       send(invitee_lv.pid, %{event: "join", payload: {1, {2, invited.id}}})
 
