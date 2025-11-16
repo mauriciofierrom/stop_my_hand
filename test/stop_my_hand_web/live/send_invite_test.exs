@@ -8,7 +8,7 @@ defmodule StopMyHandWeb.SendInviteLiveTest do
       {:ok, _lv, html} =
         conn
         |> log_in_user(user_fixture())
-        |> live(~p"/start")
+        |> live(~p"/main")
 
       assert html =~ "No results"
     end
@@ -17,7 +17,7 @@ defmodule StopMyHandWeb.SendInviteLiveTest do
       current_user = user_fixture()
       user_to_invite = user_fixture()
 
-      {:ok, lv, _html} = live(log_in_user(conn, current_user), "/start")
+      {:ok, lv, _html} = live(log_in_user(conn, current_user), "/main")
 
       lv
         |> element("#search_friend")
@@ -37,7 +37,7 @@ defmodule StopMyHandWeb.SendInviteLiveTest do
       current_user = user_fixture()
       user_to_invite = user_fixture(%{username: "steppenwolf"})
 
-      {:ok, lv, _html} = live(log_in_user(conn, current_user), "/start")
+      {:ok, lv, _html} = live(log_in_user(conn, current_user), "/main")
 
       lv
         |> element("#search_friend")

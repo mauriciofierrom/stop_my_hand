@@ -30,7 +30,7 @@ defmodule StopMyHandWeb.Friendship.List do
         <div class="w-full">
           <div class="flex flex-row">
             <h1 class="text-accent mb-2 text-2xl">Friends</h1>
-            <button class="ml-auto" phx-click={show_modal("search-friend")}>
+            <button data-testid="search-friend-button" -class="ml-auto" phx-click={show_modal("search-friend")}>
               <.icon name="hero-magnifying-glass" />
             </button>
           </div>
@@ -90,8 +90,8 @@ defmodule StopMyHandWeb.Friendship.List do
 
   defp status_indicator_class(status) do
     case status do
-      :online -> "bg-green-500"
-      :offline -> "bg-gray-500"
+      :online -> "bg-accent"
+      :offline -> "bg-light"
     end
   end
 
@@ -99,8 +99,7 @@ defmodule StopMyHandWeb.Friendship.List do
     base = ["w-2.5 h-2.5 rounded-full"]
     le_class = [status_indicator_class(assigns.status) | base]
     ~H"""
-    <div class={le_class}></div>
+    <div data-testid="status-indicator" class={le_class}></div>
     """
   end
-
 end
