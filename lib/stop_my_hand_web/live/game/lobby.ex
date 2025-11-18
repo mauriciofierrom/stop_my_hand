@@ -2,27 +2,32 @@ defmodule StopMyHandWeb.Game.Lobby do
   use StopMyHandWeb, :live_view
 
   alias StopMyHand.Game
+  alias StopMyHand.Game.Player
+  alias StopMyHand.Accounts
   alias StopMyHandWeb.Presence
   alias StopMyHandWeb.Endpoint
   alias Phoenix.LiveView.AsyncResult
 
   def render(assigns) do
     ~H"""
-    <h1>Waiting for players to join</h1>
-    <.async_result :let={players} assign={@players}>
-      <:loading>Loading invites...</:loading>
-      <:failed :let={_failure}>There was an error fetching players for this match</:failed>
-      <div class="flex flex-row">
-        <%= for {player, status} <- players do %>
-            <.player_status player={player} status={status} current_user={assigns.current_user}/>
+    <div class="flex flex-col gap-6 items-center justify-center">
+      <h1 class="text-8xl mb-10">Game Lobby</h1>
+      <h3 class="text-4xl">Waiting for players to join...</h3>
+      <.async_result :let={players} assign={assigns.players}>
+        <:loading>Loading invites...</:loading>
+        <:failed :let={_failure}>There was an error fetching players for this match</:failed>
+        <div class="flex flex-col gap-4">
+          <%= for {player, status} <- players do %>
+              <.player_status player={player} status={status} current_user={assigns.current_user}/>
+          <% end %>
+        </div>
+        <%= if @match.creator_id == assigns.current_user.id do %>
+          <.button class="disabled:opacity-50 disabled:cursor-not-allowed text-6xl px-4 py-4" disabled={!can_start_game(@match.creator_id, assigns.current_user.id, @players)} phx-click="play">
+            Play!
+          </.button>
         <% end %>
-      </div>
-      <%= if @match.creator_id == assigns.current_user.id do %>
-        <.button disabled={can_start_game(@match.creator_id, assigns.current_user.id, players)} phx-click="play">
-          Play!
-        </.button>
-      <% end %>
-    </.async_result>
+      </.async_result>
+    </div>
     """
   end
 
@@ -38,7 +43,7 @@ defmodule StopMyHandWeb.Game.Lobby do
 
     online_users = Presence.list(match_topic)
 
-    players_with_status = Enum.map(match.players, fn player ->
+    players_with_status = Enum.map([%Player{user: match.creator, match_id: match.id} | match.players], fn player ->
       status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
       {player, status}
     end)
@@ -57,9 +62,7 @@ defmodule StopMyHandWeb.Game.Lobby do
 
   def handle_info(%{event: "join", payload: {_, {_, user_id}}}, socket) do
     %AsyncResult{result: players} = socket.assigns.players
-
     new_players_status = handle_presence(players, user_id, :online)
-
     {:noreply, assign(socket, :players, AsyncResult.ok(new_players_status))}
   end
 
@@ -67,6 +70,7 @@ defmodule StopMyHandWeb.Game.Lobby do
     %AsyncResult{result: players} = socket.assigns.players
 
     new_players_status = handle_presence(players, user_id, :offline)
+    IO.inspect(new_players_status)
 
     {:noreply, assign(socket, :players, AsyncResult.ok(new_players_status))}
   end
@@ -77,11 +81,9 @@ defmodule StopMyHandWeb.Game.Lobby do
 
   defp player_status(assigns) do
     ~H"""
-      <div class="flex flex-column">
-        <%= player_handle(assigns.player, assigns.current_user) %>
-        <span class={status_message_class(assigns.status)}>
-            <%= assigns.status %>
-        </span>
+      <div class="flex flex-column gap-6 items-baseline">
+        <span class="text-2xl text-bold"><%= player_handle(assigns.player, assigns.current_user) %></span>
+        <.status_indicator status={assigns.status} />
       </div>
     """
   end
@@ -108,8 +110,10 @@ defmodule StopMyHandWeb.Game.Lobby do
     end)
   end
 
-  defp can_start_game(match_creator_id, current_user_id, players_with_status) do
-    match_creator_id == current_user_id &&
-    Enum.empty?(Enum.filter(players_with_status, fn {_p, s} -> s == :online end))
+  defp can_start_game(match_creator_id, current_user_id, async_players) do
+    %AsyncResult{result: players} = async_players
+    filtered = Enum.filter(players, fn {p, s} ->
+      s == :online && !is_nil(p.id) && p.id != match_creator_id end)
+    !Enum.empty?(filtered)
   end
 end

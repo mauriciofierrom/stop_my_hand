@@ -26,7 +26,12 @@ defmodule StopMyHand.Game do
   end
 
   def get_match(match_id) do
-    Repo.get!(Match, match_id) |> Repo.preload([players: [:user]])
+    Repo.get!(Match, match_id) |> Repo.preload([:creator, players: [:user]])
+  end
+
+  def get_creator_player(match) do
+    IO.inspect(match, label: "match")
+    Repo.get_by(Player, match_id: match.id, user_id: match.creator_id)
   end
 
   defp insert_match(attrs) do

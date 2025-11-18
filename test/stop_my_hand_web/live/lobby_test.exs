@@ -4,6 +4,8 @@ defmodule StopMyHandWeb.LobbyTest do
   import Phoenix.LiveViewTest
   import StopMyHand.GameFixtures
 
+  @status_indicator_sel "[data-testid='status-indicator']"
+
   describe "Lobby page" do
     test "shows invited players with their status", %{conn: conn} do
       match = create_match()
@@ -13,8 +15,11 @@ defmodule StopMyHandWeb.LobbyTest do
 
       result = render_async(lv)
 
-      refute result =~ "online"
-      assert result =~ "offline"
+      assert lv
+        |> element("#{@status_indicator_sel}.bg-accent") |> has_element?()
+
+      assert lv
+        |> element("#{@status_indicator_sel}.bg-light") |> has_element?()
 
       Enum.each(match.players, fn player -> assert result =~ player.user.username end)
 
@@ -22,7 +27,9 @@ defmodule StopMyHandWeb.LobbyTest do
 
       result = render_async(lv_player)
 
-      assert result =~ "online"
+      assert lv_player
+        |> element("#{@status_indicator_sel}.bg-accent") |> has_element?()
+
       assert result =~ "Me"
     end
 
@@ -34,13 +41,23 @@ defmodule StopMyHandWeb.LobbyTest do
 
       result = render_async(lv)
 
-      refute result =~ "online"
+      offline = Floki.find(result, "#{@status_indicator_sel}.bg-light")
+      online = Floki.find(result, "#{@status_indicator_sel}.bg-accent")
+
+      assert (length offline) == 2
+      assert (length online) == 1
 
       send(lv.pid, %{event: "join", payload: {1, {2, first_player.user.id}}})
 
       new_result = render_async(lv)
 
-      assert new_result =~ "online"
+      send(lv.pid, %{event: "join", payload: {1, {2, first_player.user.id}}})
+
+      offline = Floki.find(new_result, "#{@status_indicator_sel}.bg-light")
+      online = Floki.find(new_result, "#{@status_indicator_sel}.bg-accent")
+
+      assert (length offline) == 1
+      assert (length online) == 2
     end
 
     test "when an invited player leaves the lobby their status is updated to offline", %{conn: conn} do
@@ -55,26 +72,35 @@ defmodule StopMyHandWeb.LobbyTest do
 
       result = render_async(lv)
 
-      assert result =~ "online"
+      online = Floki.find(result, "#{@status_indicator_sel}.bg-accent")
+
+      assert (length online) == 2
 
       send(lv.pid, %{event: "leave", payload: {1, {2, first_player.user.id}}})
 
       new_result = render_async(lv)
 
-      refute new_result =~ "online"
+      online = Floki.find(new_result, "#{@status_indicator_sel}.bg-accent")
+
+      assert (length online) == 1
     end
 
+    @tag :focus
     test "when no invited player is online the Start button is disabled", %{conn: conn} do
       match = create_match()
       {:ok, lv, _html} = live(log_in_user(conn, match.creator), "/lobby/#{match.id}")
 
       result = render_async(lv)
 
-      refute result =~ "online"
-      assert result =~ ~r/<button[^>]*disabled[^>]*>/
+      online = Floki.find(result, "#{@status_indicator_sel}.bg-accent")
+
+      # Only the creator of the match is always online
+      assert length(online) == 1
+      assert Floki.find(result, "button[disabled]") != []
     end
 
-    test "when there's at least one invited player online the Start butotn is enabled", %{conn: conn} do
+    @tag :focus
+    test "when there's at least one invited player online the Start button is enabled", %{conn: conn} do
       match = create_match()
       [first_player|_rest] = match.players
 
@@ -86,8 +112,11 @@ defmodule StopMyHandWeb.LobbyTest do
 
       result = render_async(lv)
 
-      assert result =~ "online"
-      refute result =~ ~r/<button[^>]*disabled[^>]*>/
+      online = Floki.find(result, "#{@status_indicator_sel}.bg-accent")
+      disabled_button = Floki.find(result, "button[disabled]")
+
+      assert length(online) == 2
+      assert Floki.find(result, "button[disabled]") == []
     end
   end
 end
