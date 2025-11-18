@@ -672,4 +672,21 @@ defmodule StopMyHandWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+
+  attr :status, :atom, values: [:online, :offline], doc: "the status to indicate"
+  def status_indicator(assigns) do
+    base = ["w-2.5 h-2.5 rounded-full"]
+    le_class = [status_indicator_class(assigns.status) | base]
+    ~H"""
+    <div data-testid="status-indicator" class={le_class}></div>
+    """
+  end
+
+  defp status_indicator_class(status) do
+    case status do
+      :online -> "bg-accent"
+      :offline -> "bg-light"
+    end
+  end
 end
