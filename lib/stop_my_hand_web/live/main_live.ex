@@ -129,7 +129,6 @@ defmodule StopMyHandWeb.Main do
   end
 
   def handle_event("accept_invite", %{"inviteid" => inviteid}, socket) do
-    IO.inspect("we're in accept invite")
     invite = Friendship.get_invite_with_invitee(inviteid)
     accept_result = Friendship.accept_invite(invite)
     case accept_result do
@@ -151,9 +150,7 @@ defmodule StopMyHandWeb.Main do
 
   # WARN: We -DO NOT- report that a friend was removed EVER.
   def handle_event("remove_friend", %{"userid" => userid}, socket) do
-    IO.inspect("yep, w'ere here")
     current_user = socket.assigns.current_user
-    IO.inspect(current_user)
     remove_result = Friendship.remove_friend(current_user, userid)
     case remove_result do
       {:ok, _} ->
