@@ -56,8 +56,20 @@ defmodule StopMyHandWeb.Game.Lobby do
   end
 
   def handle_event("play", _params, socket) do
-    Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
-    {:noreply, push_navigate(socket, to: "/match/#{socket.assigns.match.id}")}
+    player_ids = Enum.map(socket.assigns.match.players, fn %Player{user_id: user_id} -> user_id end)
+    full_player_ids = [ socket.assigns.match.creator.id | player_ids ]
+
+    # Start the driver for this match
+    case DynamicSupervisor
+      .start_child(StopMyHand.DynamicSupervisor,
+        {StopMyHand.MatchDriver,
+         %{player_ids: full_player_ids, match_id: socket.assigns.match.id}}) do
+      {:ok, _pid} ->
+        Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
+      {:error, reason} -> IO.inspect(reason, label: "Match Driver")
+    end
+
+    {:noreply, socket}
   end
 
   def handle_info(%{event: "join", payload: {_, {_, user_id}}}, socket) do
@@ -70,7 +82,6 @@ defmodule StopMyHandWeb.Game.Lobby do
     %AsyncResult{result: players} = socket.assigns.players
 
     new_players_status = handle_presence(players, user_id, :offline)
-    IO.inspect(new_players_status)
 
     {:noreply, assign(socket, :players, AsyncResult.ok(new_players_status))}
   end

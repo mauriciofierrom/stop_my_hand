@@ -12,20 +12,23 @@ defmodule StopMyHandWeb.Game.Match do
 
   def render(assigns) do
     ~H"""
-    <h1>Stop my hand!</h1>
-    <div id="counter">3</div>
-    <div id="game" class="hidden">
-      GAME IN PROGRESS
-      <div id="letter"></div>
-      <div id="round-countdown"></div>
-      <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
-        <.input field={f[:name]} label="Name" />
-        <.input field={f[:last_name]} label="Last Name" />
-        <.input field={f[:city]} label="City" />
-        <.input field={f[:color]} label="Color" />
-        <.input field={f[:animal]} label="Animal" />
-        <.input field={f[:thing]} label="Thing" />
-      </.simple_form>
+    <div class="flex flex-col gap-5 items-center justify-center">
+      <h1 class="text-6xl">ROUND 1</h1>
+      <div id="counter" class="text-8xl">3</div>
+      <div id="game" class="hidden flex flex-col gap-5 items-center justify-center">
+        <div id="letter" class="text-8xl text-accent"></div>
+        <div id="round-countdown" class="shadow-md text-4xl"></div>
+        <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
+          <div class="flex flex-column gap-3">
+            <.input field={f[:name]} label="Name" />
+            <.input field={f[:last_name]} label="Last Name" />
+            <.input field={f[:city]} label="City" />
+            <.input field={f[:color]} label="Color" />
+            <.input field={f[:animal]} label="Animal" />
+            <.input field={f[:thing]} label="Thing" />
+          </div>
+        </.simple_form>
+      </div>
     </div>
     """
   end
@@ -36,6 +39,7 @@ defmodule StopMyHandWeb.Game.Match do
     {:ok, socket
     |> assign(:match_id, match_id)
     |> assign(:round, %Round{})
+    |> push_event("connect_match", %{match_id: match_id})
     |> start_async(:fetch_players, fn -> Game.get_match_players(match_id) end)
     }
   end
@@ -45,16 +49,6 @@ defmodule StopMyHandWeb.Game.Match do
     match_id = socket.assigns.match_id
     match = Game.get_match(match_id)
 
-    # Start the driver for this match
-    DynamicSupervisor
-      .start_child(StopMyHand.DynamicSupervisor,
-        {StopMyHand.MatchDriver,
-         %{player_ids: [match.creator_id | player_ids], match_id: match_id}})
-
-    {:ok, letter} = MatchDriver.pick_letter(match_id)
-
-    {:noreply, push_event(socket, "connect_match", %{
-               match_id: match_id,
-               timestamp: System.system_time(:millisecond)})}
+    {:noreply, socket}
   end
 end
