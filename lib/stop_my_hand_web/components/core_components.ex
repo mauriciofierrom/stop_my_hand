@@ -371,8 +371,8 @@ defmodule StopMyHandWeb.CoreComponents do
         class={[
           "mt-2 block w-full rounded-lg text-base focus:ring-0 sm:text-sm sm:leading-6",
           "phx-no-feedback:border-stroke phx-no-feedback:focus:border-accent",
-          @errors == [] && "border-zinc-300 focus:border-zinc-400",
-          @errors != [] && "border-rose-400 focus:border-rose-400"
+          @errors == [] && "border-primary focus:border-zinc-accent",
+          @errors != [] && "border-red-400 focus:border-red-400"
         ]}
         {@rest}
       />
