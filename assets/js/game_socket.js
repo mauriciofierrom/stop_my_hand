@@ -64,9 +64,9 @@ export function createMatch({matchId, timestamp}) {
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
     .receive("error", resp => { console.log("Unable to join", resp) })
-  channel.on("start_countdown", ({ at, first_letter }) => {
-    console.log(`At: ${at}. First letter: ${first_letter}`)
-    let counter = 3
+  channel.on("game_start", ({ countdown, letter, round }) => {
+    console.log(`GAME START - Countdown: ${countdown}. First letter: ${letter}`)
+    let counter = countdown
     const intervalId = setInterval(() => {
       counter--
       if(counter > 0) {
@@ -85,8 +85,8 @@ export function createMatch({matchId, timestamp}) {
         const letterElement = document.querySelector("#letter")
 
         // Set the letter element
-        letterElement.innerHTML = `${first_letter}`
-        addEvents(first_letter, gameFields, channel)
+        letterElement.innerHTML = `${letter}`
+        addEvents(letter, gameFields, channel)
 
         // Actions to perform when round starts
         onRoundStart(letter, channel)
