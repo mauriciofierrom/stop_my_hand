@@ -21,11 +21,13 @@ defmodule StopMyHandWeb.MatchChannel do
     {:ok, assign(socket, :match_id, match_id)}
   end
 
+  # Player-triggered end of round (they filled all the fields)
   def handle_in("player_finished", params, socket) do
-    broadcast!(socket, "round_finished", params)
+    MatchDriver.round_finished(socket.assigns.match_id)
     {:noreply, socket}
   end
 
+  # Timeout-triggered en of round (no player finished filling the fields until the round timeout)
   def handle_in("round_finished", params, socket) do
     MatchDriver.round_finished(socket.assigns.match_id)
     {:noreply, socket}

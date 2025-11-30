@@ -60,6 +60,7 @@ socket.connect()
 export function createMatch({matchId, timestamp}) {
   const offset = Math.abs(Date.now() - timestamp)
   let channel = socket.channel(`match:${matchId}`, {clockOffset: offset})
+  let currentLetter = null
   const gameFields = document.querySelectorAll('#round input[type="text"]')
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
@@ -67,6 +68,7 @@ export function createMatch({matchId, timestamp}) {
   channel.on("game_start", ({ countdown, letter, round }) => {
     console.log(`GAME START - Countdown: ${countdown}. First letter: ${letter}`)
     let counter = countdown
+    currentLetter = letter
     const intervalId = setInterval(() => {
       counter--
       if(counter > 0) {
@@ -93,8 +95,9 @@ export function createMatch({matchId, timestamp}) {
       }
     }, 1000)
   })
-  channel.on("round_finished", ({letter}) => {
-    onRoundEnd(letter, gameFields, channel)
+  channel.on("round_finished", () => {
+    console.log(`round finished!: ${currentLetter}`)
+    onRoundEnd(currentLetter, gameFields, channel)
   })
 
   return channel
