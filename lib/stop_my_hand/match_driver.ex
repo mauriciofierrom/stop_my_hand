@@ -6,7 +6,8 @@ defmodule StopMyHand.MatchDriver do
 
   alias StopMyHandWeb.Endpoint
 
-  @quorum_timeout 15000
+  @quorum_timeout 15_000
+  @game_start_timeout 1_000
   @match_topic "match"
   @countdown 3
 
@@ -14,7 +15,7 @@ defmodule StopMyHand.MatchDriver do
     GenServer.start_link(__MODULE__, {player_ids, match_id}, name: via_tuple(match_id))
   end
 
-  def init({ expected_player_ids, match_id}) do
+  def init({expected_player_ids, match_id}) do
     {starting_letter, alphabet} = pick_letter_from(make_alphabet())
 
     Process.send_after(self(), :no_quorum, @quorum_timeout)
@@ -41,18 +42,22 @@ defmodule StopMyHand.MatchDriver do
     GenServer.call(via_tuple(match_id), :pick_letter)
   end
 
+  def round_finished(match_id) do
+    GenServer.call(via_tuple(match_id), :round_finished)
+  end
+
   def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) == length(expected) do
     # Set the status to started when there's quorum
     new_status = if length(joined) >= 1, do: :ongoing, else: state.game_status
 
-    Process.send_after(self(), :game_start, 1000)
+    Process.send_after(self(), :game_start, @game_start_timeout)
 
     {:noreply, %{state|joined: [player_id|joined], game_status: :ongoing}}
   end
 
   # Only on the init state we add players to mark them as JOINED
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) when length(joined) >= 1 do
-    Process.send_after(self(), :game_start, 200)
+    Process.send_after(self(), :game_start, @game_start_timeout)
 
     {:reply, %{ok: :pending}, %{state|joined: [player_id|joined], game_status: :ongoing}}
   end
@@ -74,6 +79,10 @@ defmodule StopMyHand.MatchDriver do
     {:reply, {:ok, letter}, %{state|alphabet: new_alphabet}}
   end
 
+  def handle_call(:round_finished, _from, _params, state) do
+    {:reply, :ok, %{state|game_status: :in_between}}
+  end
+
   def handle_info(:game_start, state) do
     payload = %{
       letter: state.letter,
@@ -82,6 +91,8 @@ defmodule StopMyHand.MatchDriver do
     }
 
     Endpoint.broadcast!("#{@match_topic}:#{state.match_id}", "game_start", payload)
+
+    {:noreply, state}
   end
 
   def handle_info(:no_quorum, %{game_status: :init} = state) do

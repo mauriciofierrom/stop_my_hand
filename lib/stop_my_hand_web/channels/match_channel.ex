@@ -11,19 +11,23 @@ defmodule StopMyHandWeb.MatchChannel do
   @match_topic "match"
 
   @impl true
-  def join("match:"<>match_id, payload, socket) do
+  def join("match:"<>raw_match_id, payload, socket) do
     IO.inspect(socket.assigns.user)
     IO.inspect("channel joined")
+    match_id = String.to_integer(raw_match_id)
 
-    MatchDriver.player_joined(String.to_integer(match_id), socket.assigns.user)
+    MatchDriver.player_joined(match_id, socket.assigns.user)
 
     {:ok, assign(socket, :match_id, match_id)}
   end
 
-  def handle_in("round_finished", params, socket) do
-    IO.inspect("player_finished received")
-    # broadcast!(socket, "round_finished", params)
+  def handle_in("player_finished", params, socket) do
+    broadcast!(socket, "round_finished", params)
+    {:noreply, socket}
+  end
 
+  def handle_in("round_finished", params, socket) do
+    MatchDriver.round_finished(socket.assigns.match_id)
     {:noreply, socket}
   end
 end

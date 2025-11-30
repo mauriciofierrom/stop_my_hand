@@ -102,7 +102,7 @@ export function createMatch({matchId, timestamp}) {
 
 const handleEnterEvent = (channel, letter, inputs) => {
   return (event => {
-    if(event.key === "Enter" && validate(letter, inputs)) {
+    if(event.key === "Enter" && validateFields(letter, inputs)) {
       channel.push("player_finished", {letter})
     }
   })
@@ -111,7 +111,7 @@ const handleEnterEvent = (channel, letter, inputs) => {
 const isValid = (letter, input) =>
       input.value && input.value[0].toUpperCase() === letter.toUpperCase()
 
-const validate = (letter, inputs) =>
+const validateFields = (letter, inputs) =>
   Array.from(inputs).every(i => isValid(letter, i))
 
 const addEvents = (letter, inputs, channel) => {
