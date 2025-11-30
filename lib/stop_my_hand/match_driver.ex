@@ -7,6 +7,7 @@ defmodule StopMyHand.MatchDriver do
   alias StopMyHandWeb.Endpoint
 
   @quorum_timeout 15_000
+  @round_timeout 18_000
   @game_start_timeout 1_000
   @match_topic "match"
   @countdown 3
@@ -79,8 +80,9 @@ defmodule StopMyHand.MatchDriver do
     {:reply, {:ok, letter}, %{state|alphabet: new_alphabet}}
   end
 
-  def handle_call(:round_finished, _from, _params, state) do
-    {:reply, :ok, %{state|game_status: :in_between}}
+  def handle_call(:round_finished, _from, state) do
+    broadcast("round_finished", state.match_id, %{})
+    {:noreply, %{state|game_status: :in_between}}
   end
 
   def handle_info(:game_start, state) do
@@ -90,7 +92,8 @@ defmodule StopMyHand.MatchDriver do
       countdown: @countdown
     }
 
-    Endpoint.broadcast!("#{@match_topic}:#{state.match_id}", "game_start", payload)
+    broadcast("game_start", state.match_id, payload)
+    Process.send_after(self(), :round_timeout, @countdown*1_000 + @round_timeout)
 
     {:noreply, state}
   end
@@ -100,6 +103,16 @@ defmodule StopMyHand.MatchDriver do
   end
 
   def handle_info(:no_quorum, state) do
+    {:noreply, state}
+  end
+
+  def handle_info(:round_timeout, %{game_status: :ongoing} = state) do
+    broadcast("round_finished", state.match_id, %{})
+    {:noreply, %{state|game_status: :in_between}}
+  end
+
+  def handle_info(:round_timeout, state) do
+    IO.inspect("Round timeout not reached")
     {:noreply, state}
   end
 
@@ -114,5 +127,9 @@ defmodule StopMyHand.MatchDriver do
 
   defp via_tuple(match_id) do
     {:via, Registry, {StopMyHand.Registry, match_id}}
+  end
+
+  defp broadcast(event, match_id, payload) do
+    Endpoint.broadcast!("#{@match_topic}:#{match_id}", event, payload)
   end
 end
