@@ -39,4 +39,15 @@ Hooks.ConfirmFriendRemoval = {
   }
 }
 
+Hooks.MatchHook = {
+  mounted() {
+    console.log("match hook mounted")
+    window.addEventListener("match:review", ({detail: payload}) => {
+      console.log("match:review")
+      console.log(payload)
+      this.pushEvent("enable_review", payload)
+    })
+  }
+}
+
 export default Hooks;
