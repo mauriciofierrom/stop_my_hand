@@ -57,19 +57,23 @@ socket.connect()
 // Let's assume you have a channel with a topic named `room` and the
 // subtopic is its id - in this case 42:
 
+let intervalId = null
+
 export function createMatch({matchId, timestamp}) {
   const offset = Math.abs(Date.now() - timestamp)
   let channel = socket.channel(`match:${matchId}`, {clockOffset: offset})
   let currentLetter = null
   const gameFields = document.querySelectorAll('#round input[type="text"]')
+
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
     .receive("error", resp => { console.log("Unable to join", resp) })
+
   channel.on("game_start", ({ countdown, letter, round }) => {
     console.log(`GAME START - Countdown: ${countdown}. First letter: ${letter}`)
     let counter = countdown
     currentLetter = letter
-    const intervalId = setInterval(() => {
+    intervalId = setInterval(() => {
       counter--
       if(counter > 0) {
         document.querySelector("#counter").innerHTML = counter
@@ -90,14 +94,23 @@ export function createMatch({matchId, timestamp}) {
         letterElement.innerHTML = `${letter}`
         addEvents(letter, gameFields, channel)
 
+        // Focus on the first elmeent to make it easier to start playing
+        gameFields[0].focus()
+
         // Actions to perform when round starts
         onRoundStart(letter, channel)
       }
     }, 1000)
   })
+
   channel.on("round_finished", () => {
     console.log(`round finished!: ${currentLetter}`)
     onRoundEnd(currentLetter, gameFields, channel)
+  })
+
+  channel.on("in_review", ({category, answers}) => {
+    console.log("in review")
+    onReview(category, answers, channel)
   })
 
   return channel
@@ -129,36 +142,79 @@ const removeEvents = (letter, inputs, channel) => {
 const calculateScore = (letter, inputs) =>
   Array.from(inputs).reduce((acc, i) => acc + (isValid(letter, i) ? 100 : 0), 0)
 
-const onRoundEnd = (letter, inputs, channel) => {
-  console.log("onRoundEnd")
-  const score = calculateScore(letter, inputs)
-  inputs.forEach(i => {
-    i.classList.add("disabled")
-    i.value = ""
-    i.disabled = true
-  })
-  removeEvents(letter, inputs, channel)
-  alert(`Score: ${score}`)
-}
-
 const onRoundStart = (letter, channel) => {
   const roundTimeout = document.querySelector('#round-countdown')
-  const toMinute = (seconds) => Math.floor(seconds / 60)
-  const toSecondsLeft = (seconds) => seconds % 60
-  const formatTime = (seconds) => `${toMinute(seconds).toString().padStart(2, '0')}:${toSecondsLeft(seconds).toString().padStart(2, '0')}`
   let countdown = 180
 
   roundTimeout.innerHTML = formatTime(countdown)
   roundTimeout.classList.remove("hidden")
 
-  setInterval(() => {
+  intervalId = setInterval(() => {
     countdown -= 1
     roundTimeout.innerHTML = formatTime(countdown)
 
     if(countdown === 0) {
+      clearInterval(intervalId)
       channel.push("round_finished", {letter})
     }
   }, 1000)
 }
 
+const onRoundEnd = (letter, inputs, channel) => {
+  console.log("onRoundEnd")
+
+  const score = calculateScore(letter, inputs)
+  const roundTimeout = document.querySelector('#round-countdown')
+  roundTimeout.classList.add("hidden")
+  const letterElement = document.querySelector("#letter")
+
+  letterElement.innerHTML = `Reviewing - ${letter}`
+
+  console.log(inputs)
+
+  inputs.forEach(i => {
+    i.classList.add("disabled")
+    i.disabled = true
+  })
+
+  removeEvents(letter, inputs, channel)
+
+  const answers = Object.fromEntries(Array.from(inputs).map(i => [i.dataset.category, i.value]))
+  console.log(answers)
+  channel.push("report_answers", answers)
+  // alert(`Score: ${score}`)
+}
+
+const onReview = (category, answers, channel) => {
+  const counterElement = document.querySelector('#counter')
+  const reviewTimeout = 10
+  const event = new CustomEvent("match:review", { detail: {category, answers} })
+  let countdown = reviewTimeout
+
+  counterElement.innerHTML = formatTime(countdown)
+  counterElement.classList.remove("hidden")
+
+  window.dispatchEvent(event)
+
+  clearInterval(intervalId)
+
+  intervalId = setInterval(() => {
+    countdown -= 1
+    counterElement.innerHTML = formatTime(countdown)
+
+    if(countdown === 0) {
+      clearInterval(intervalId)
+      // Disable controls
+      console.log("answer review timed out!")
+    }
+  }, 1000)
+}
+
+const formatTime = (seconds) => {
+  const toMinute = (seconds) => Math.floor(seconds / 60)
+  const toSecondsLeft = (seconds) => seconds % 60
+  return `${toMinute(seconds).toString().padStart(2, '0')}:${toSecondsLeft(seconds).toString().padStart(2, '0')}`
+}
+
 export default socket
+
