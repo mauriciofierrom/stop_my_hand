@@ -16,11 +16,10 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
-      <h1 class="text-6xl">ROUND <%= @round_number %></h1>
-      <div id="counter" class="text-8xl">3</div>
+      <h1 class="text-8xl">ROUND <%= @round_number %></h1>
+      <div id="counter" class="shadow-md text-6xl"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center", (if @reviewing, do: "", else: "hidden")]} phx-hook="MatchHook">
         <div id="letter" class="text-8xl text-accent"></div>
-        <div id="round-countdown" class="shadow-md text-4xl"></div>
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
           <div class="flex flex-column gap-3">
             <.input field={f[:name]} label="Name" data-category="name" />
@@ -70,20 +69,10 @@ defmodule StopMyHandWeb.Game.Match do
         [{socket.assigns.match.creator.id, socket.assigns.match.creator.username}|players]
       end
 
-    empty_categories = Map.new(@ordered_cats, fn e -> {e, ""} end)
-    player_answers = Map.new(full_players, fn {id, username} -> {id, %{handle: username, answers: empty_categories}} end)
-
-    empty_reviews = Map.new(@categories, fn cat -> {cat, :none} end)
-
-    # Now this looks like a job for me
-    eminem = full_players
-    |> Enum.filter(fn player_id -> player_id != socket.assigns.current_user.id end)
-    |> Map.new(fn {player_id, _} -> {player_id, empty_reviews} end)
-
     {:noreply, socket
      |> assign(:players, full_players)
-     |> assign(:player_answers, player_answers)
-     |> assign(:player_reviews, eminem)
+     |> assign(:player_answers, default_answers(full_players))
+     |> assign(:player_reviews, default_reviews(players, socket.assigns.current_user.id))
     }
   end
 
@@ -130,6 +119,18 @@ defmodule StopMyHandWeb.Game.Match do
     |> assign(:reviewing, true)
     |> assign(:player_answers, updated_player_answers)
     |> assign(:current_category, String.to_existing_atom(category))
+    }
+  end
+
+  def handle_event("reset", _params, socket) do
+    IO.inspect("reset via hook")
+    players = socket.assigns.players
+
+    {:noreply, socket
+     |> assign(:player_answers, default_answers(players))
+     |> assign(:player_reviews, default_reviews(players, socket.assigns.current_user.id))
+     |> assign(:round, %Round{})
+     |> assign(:reviewing, false)
     }
   end
 
@@ -186,5 +187,18 @@ defmodule StopMyHandWeb.Game.Match do
       :rejected -> "text-red-600"
       :none -> ""
     end
+  end
+
+  defp default_answers(players) do
+    empty_categories = Map.new(@ordered_cats, fn e -> {e, ""} end)
+    Map.new(players, fn {id, username} -> {id, %{handle: username, answers: empty_categories}} end)
+  end
+
+  defp default_reviews(players, current_user_id) do
+    empty_reviews = Map.new(@categories, fn cat -> {cat, :none} end)
+
+    players
+    |> Enum.filter(fn player_id -> player_id != current_user_id end)
+    |> Map.new(fn {player_id, _} -> {player_id, empty_reviews} end)
   end
 end

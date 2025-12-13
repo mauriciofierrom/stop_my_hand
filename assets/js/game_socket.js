@@ -63,6 +63,7 @@ export function createMatch({matchId, timestamp}) {
   const offset = Math.abs(Date.now() - timestamp)
   let channel = socket.channel(`match:${matchId}`, {clockOffset: offset})
   let currentLetter = null
+  const counterElement = document.querySelector("#counter")
   const gameFields = document.querySelectorAll('#round input[type="text"]')
 
   channel.join()
@@ -76,12 +77,12 @@ export function createMatch({matchId, timestamp}) {
     intervalId = setInterval(() => {
       counter--
       if(counter > 0) {
-        document.querySelector("#counter").innerHTML = counter
+        counterElement.innerHTML = counter
       } else {
         clearInterval(intervalId)
 
         // Hide counter
-        document.querySelector("#counter").classList.add("hidden")
+        counterElement.classList.add("hidden")
 
         // Show game element
         const gameElement = document.querySelector("#game")
@@ -105,7 +106,49 @@ export function createMatch({matchId, timestamp}) {
 
   channel.on("round_finished", () => {
     console.log(`round finished!: ${currentLetter}`)
+    clearInterval(intervalId)
+
+
     onRoundEnd(currentLetter, gameFields, channel)
+  })
+
+  channel.on("round_start", ({letter}) => {
+    addEvents(letter, gameFields, channel)
+    console.log(`round starting ${letter}`)
+    clearInterval(intervalId)
+    currentLetter = letter
+    gameFields.forEach(i => {
+      i.classList.remove("disabled")
+      i.disabled = false
+    })
+    onRoundStart(letter, channel)
+  })
+
+  channel.on("next_round", ({timeout}) => {
+    console.log(`The countdown ${timeout}`)
+
+    const event = new CustomEvent("match:reset")
+
+    // Tell LV to reset the thingies
+    window.dispatchEvent(event)
+
+    let countdown = timeout
+
+    const roundTimeout = document.querySelector('#counter')
+    const gameElement = document.querySelector("#game")
+
+    gameElement.classList.add("hidden")
+
+    clearInterval(intervalId)
+
+    intervalId = setInterval(() => {
+      countdown -= 1
+      roundTimeout.innerHTML = formatTime(countdown)
+
+      if(countdown === 0) {
+        clearInterval(intervalId)
+      }
+    }, 1000)
   })
 
   channel.on("in_review", ({category, answers}) => {
@@ -143,17 +186,32 @@ const calculateScore = (letter, inputs) =>
   Array.from(inputs).reduce((acc, i) => acc + (isValid(letter, i) ? 100 : 0), 0)
 
 const onRoundStart = (letter, channel) => {
-  const roundTimeout = document.querySelector('#round-countdown')
-  let countdown = 180
+  const roundTimeout = document.querySelector('#counter')
+  const firstGameField = document.querySelector('#round input[type="text"]')
+  let duration = 180
 
-  roundTimeout.innerHTML = formatTime(countdown)
+  roundTimeout.innerHTML = formatTime(duration)
   roundTimeout.classList.remove("hidden")
 
-  intervalId = setInterval(() => {
-    countdown -= 1
-    roundTimeout.innerHTML = formatTime(countdown)
+  // Show game element
+  const gameElement = document.querySelector("#game")
+  gameElement.classList.remove("hidden")
 
-    if(countdown === 0) {
+  // Focus on first input
+  firstGameField.focus()
+
+  // Pick new game letter
+  const letterElement = document.querySelector("#letter")
+
+  // Set the letter element
+  letterElement.innerHTML = `${letter}`
+
+
+  intervalId = setInterval(() => {
+    duration -= 1
+    roundTimeout.innerHTML = formatTime(duration)
+
+    if(duration === 0) {
       clearInterval(intervalId)
       channel.push("round_finished", {letter})
     }
@@ -164,7 +222,7 @@ const onRoundEnd = (letter, inputs, channel) => {
   console.log("onRoundEnd")
 
   const score = calculateScore(letter, inputs)
-  const roundTimeout = document.querySelector('#round-countdown')
+  const roundTimeout = document.querySelector('#counter')
   roundTimeout.classList.add("hidden")
   const letterElement = document.querySelector("#letter")
 
@@ -217,4 +275,3 @@ const formatTime = (seconds) => {
 }
 
 export default socket
-

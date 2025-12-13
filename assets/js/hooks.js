@@ -47,6 +47,13 @@ Hooks.MatchHook = {
       console.log(payload)
       this.pushEvent("enable_review", payload)
     })
+
+    window.addEventListener("match:reset", (e) => {
+      console.log("match:reset")
+      const gameForm = document.querySelector("#round")
+      gameForm.reset()
+      this.pushEvent("reset", {})
+    })
   }
 }
 

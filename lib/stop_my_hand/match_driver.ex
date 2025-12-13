@@ -169,11 +169,14 @@ defmodule StopMyHand.MatchDriver do
   # We just start the timeout for the next round
   def handle_info({:review_timeout, cat_idx}, state) when cat_idx >= length(@categories) - 1 do
     IO.inspect(cat_idx, label: "The index when it's supposed to end")
+
     # 1. Update scores
     # 2. Start next round timeout
+    broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
+
     Process.send_after(self(), :next_round_timeout, @next_round_timeout)
 
-    {:noreply, %{state|game_status: :next_round, cat_index: 0}}
+    {:noreply, %{state|game_status: :next_round}}
   end
 
   # TODO: When we skip early when all reviews are in we need to discriminate here on the current index
@@ -198,7 +201,7 @@ defmodule StopMyHand.MatchDriver do
       countdown: @countdown
     }
 
-    broadcast("game_start", state.match_id, payload)
+    broadcast("round_start", state.match_id, payload)
 
     Process.send_after(self(), :round_timeout, @round_timeout)
 
@@ -209,6 +212,7 @@ defmodule StopMyHand.MatchDriver do
        round: new_round,
        letter: new_letter,
        reviews: default_reviews(state.joined),
+       cat_index: 0,
        answers: %{}
      }
     }
