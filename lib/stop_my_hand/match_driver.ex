@@ -5,6 +5,7 @@ defmodule StopMyHand.MatchDriver do
   use GenServer
 
   alias StopMyHandWeb.Endpoint
+  alias StopMyHand.Game.Score
 
   @quorum_timeout 15_000
   @game_start_timeout 1_000
@@ -36,7 +37,9 @@ defmodule StopMyHand.MatchDriver do
       game_status: :init,
       answers: %{},
       cat_index: 0,
-      reviews: %{}
+      players_answered: [],
+      player_data: %{},
+      score: (for expected_player_id <- expected_player_ids, into: %{}, do: {expected_player_id, 0})
     }
 
     {:ok, initial_state}
@@ -62,25 +65,37 @@ defmodule StopMyHand.MatchDriver do
     GenServer.call(via_tuple(match_id), {:player_review, reviewer_id, player_id, result})
   end
 
-  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) == length(expected) do
-    # Set the status to started when there's quorum
-    new_status = if length(joined) >= 1, do: :ongoing, else: state.game_status
+  def get_player_data(match_id) do
+    GenServer.call(via_tuple(match_id), :get_player_data)
+  end
+
+  def get_player_score(match_id, player_id) do
+    GenServer.call(via_tuple(match_id), {:get_player_score, player_id})
+  end
+
+  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined)+1 == length(expected) do
+    all_joined = [player_id|joined]
+    player_data = Score.default_player_data(all_joined)
 
     Process.send_after(self(), :game_start, @game_start_timeout)
 
-    {:noreply, %{state|joined: [player_id|joined], game_status: :ongoing}}
+    {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing, player_data: player_data}}
   end
 
   # Only on the init state we add players to mark them as JOINED
+  # In this case we've arrived at at least two players so we start the timeout, if the timeout happens before we have full quorum we're set
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) when length(joined) >= 1 do
+    joined = [player_id|joined]
+    player_data = Score.default_player_data(joined)
+
     Process.send_after(self(), :game_start, @game_start_timeout)
 
-    {:reply, %{ok: :pending}, %{state|joined: [player_id|joined], game_status: :ongoing}}
+    {:reply, :ok, %{state|joined: joined, game_status: :ongoing, player_data: player_data}}
   end
 
   # Only on the init state we add players to mark them as JOINED
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) do
-    {:reply, %{ok: :pending}, %{state|joined: [player_id|joined]}}
+    {:reply, :ok, %{state|joined: [player_id|joined]}}
   end
 
   # On any other game state the player is considered pending and will be moved before the new round starts
@@ -103,25 +118,49 @@ defmodule StopMyHand.MatchDriver do
   end
 
   def handle_call({:player_answers, player_id, player_answers}, _from, state) do
-    updated_answers = Map.put(state.answers, player_id, player_answers)
+    player_data = state.player_data
+
+    updated_player_data =
+      Enum.reduce(player_answers, player_data,
+        fn {cat, value}, acc ->
+          cat_symbol = String.to_existing_atom(cat)
+          put_in(acc, [player_id, :answers, cat_symbol, :value], value) end)
+
+    updated_players_answered = [player_id|state.players_answered]
 
     # If we have gathered the answers of every player that is supposed to be joined
     # we can move on to the :in_review state
-    if length(Map.keys(updated_answers)) == length(state.joined) do
-      broadcast("in_review", state.match_id, %{category: Enum.at(@categories, state.cat_index), answers: updated_answers})
+    if length(updated_players_answered) == length(state.joined) do
+      broadcast("in_review", state.match_id, %{category: Enum.at(@categories, state.cat_index)})
 
       Process.send_after(self(), {:review_timeout, state.cat_index},  @review_timeout)
 
-      {:reply, :ok, %{state|answers: updated_answers, game_status: :in_review, reviews: default_reviews(state.joined)}}
+      {:reply, :ok, %{state|player_data: updated_player_data, game_status: :in_review, players_answered: updated_players_answered}}
     else
-      {:reply, :ok, %{state|answers: updated_answers}}
+      {:reply, :ok, %{state|player_data: updated_player_data, players_answered: updated_players_answered}}
     end
   end
 
-  def handle_call({:player_review, reviewer_id, player_id, result}, _from, %{reviews: reviews, cat_index: idx} = state) do
+  def handle_call({:player_review, reviewer_id, player_id, result}, _from, %{cat_index: idx} = state) do
+    # To create a sense of urgency we set any non-rejected value to accepted, so that the
+    # players are motivated to review to not give away free points
+    final_result = if result == :rejected, do: result, else: :accepted
+    player_data = state.player_data
+
+    updated_player_data =
+      put_in(player_data[player_id][:answers][Enum.at(@categories, idx)][:reviews][reviewer_id], final_result)
+
     # We let the time run out, no ending the review time beforehand. Skipped for now.
     # TODO: End review process earlier if all players have finished voting
-    {:reply, :ok, %{state|reviews: put_in(reviews[reviewer_id][Enum.at(@categories, idx)][player_id], result)}}
+    {:reply, {:ok, updated_player_data}, %{state|player_data: updated_player_data}}
+  end
+
+  def handle_call(:get_player_data, _from, %{player_data: player_data} = state) do
+    {:reply, player_data, state}
+  end
+
+  def handle_call({:get_player_score, player_id}, _from, %{score: score} = state) do
+    {:reply, score[player_id], state}
   end
 
   def handle_info(:game_start, state) do
@@ -152,7 +191,6 @@ defmodule StopMyHand.MatchDriver do
   end
 
   def handle_info(:round_timeout, state) do
-    IO.inspect("Round timeout not reached")
     {:noreply, state}
   end
 
@@ -161,33 +199,36 @@ defmodule StopMyHand.MatchDriver do
     updated_joined = state.joined -- missing
     updated_pending = (state.pending ++ missing) |> Enum.uniq()
 
-    {:noreply, %{state | joined: updated_joined, pending: updated_pending, game_status: :in_review, reviews: default_reviews(updated_joined)}}
+    {:noreply, %{state | joined: updated_joined, pending: updated_pending, game_status: :in_review}}
   end
 
   def handle_info(:answers_timeout, state), do: {:noreply, state}
 
   # We just start the timeout for the next round
   def handle_info({:review_timeout, cat_idx}, state) when cat_idx >= length(@categories) - 1 do
-    IO.inspect(cat_idx, label: "The index when it's supposed to end")
+    round_data_with_scores = Score.scores(state.player_data)
+    broadcast("show_scores", state.match_id, %{})
+    Process.send_after(self(), :show_scores_timeout, @next_round_timeout)
 
-    # 1. Update scores
-    # 2. Start next round timeout
-    broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
-
-    Process.send_after(self(), :next_round_timeout, @next_round_timeout)
-
-    {:noreply, %{state|game_status: :next_round}}
+    {:noreply, %{state|game_status: :showing_scores, player_data: round_data_with_scores}}
   end
 
   # TODO: When we skip early when all reviews are in we need to discriminate here on the current index
   def handle_info({:review_timeout, cat_idx}, state) do
     new_cat_index = cat_idx + 1
-    IO.inspect(new_cat_index, label: "New cat index")
 
-    broadcast("in_review", state.match_id, %{category: Enum.at(@categories, new_cat_index), answers: state.answers})
+    broadcast("in_review", state.match_id, %{category: Enum.at(@categories, new_cat_index)})
     Process.send_after(self(), {:review_timeout, new_cat_index},  @review_timeout)
 
     {:noreply, %{state | cat_index: new_cat_index}}
+  end
+
+  def handle_info(:show_scores_timeout, state) do
+    # 2. Start next round timeout
+    broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
+    Process.send_after(self(), :next_round_timeout, @next_round_timeout)
+
+    {:noreply, %{state|game_status: :next_round}}
   end
 
   # Timeout for next round has finished so we start the round
@@ -201,6 +242,10 @@ defmodule StopMyHand.MatchDriver do
       countdown: @countdown
     }
 
+    updated_score = update_match_score(state.player_data, state.score)
+
+    player_data = Score.default_player_data(state.joined)
+
     broadcast("round_start", state.match_id, payload)
 
     Process.send_after(self(), :round_timeout, @round_timeout)
@@ -211,9 +256,10 @@ defmodule StopMyHand.MatchDriver do
        alphabet: new_alphabet,
        round: new_round,
        letter: new_letter,
-       reviews: default_reviews(state.joined),
        cat_index: 0,
-       answers: %{}
+       player_data: player_data,
+       players_answered: [],
+       score: updated_score
      }
     }
   end
@@ -236,9 +282,17 @@ defmodule StopMyHand.MatchDriver do
   end
 
   # %{player_id: %{cat: %{reviewer_id: result}}}
-  def default_reviews(player_ids) do
+  defp default_reviews(player_ids) do
     Map.new(player_ids, fn player_id ->
       {player_id, Map.new(@categories, fn cat -> {cat, Map.new(player_ids -- [player_id], &{&1, :none})} end)}
     end)
+  end
+
+  defp update_match_score(player_data, current_match_score) do
+    for {player_id, data} <- player_data, reduce: current_match_score do
+      current_scores ->
+        round_score = Enum.reduce(data.answers, 0, fn {_cat, answer}, sum -> sum + answer.result.points end)
+        put_in(current_scores, player_id, current_scores[player_id] + round_score)
+    end
   end
 end

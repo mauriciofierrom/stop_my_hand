@@ -7,6 +7,7 @@ defmodule StopMyHandWeb.Game.Match do
   alias StopMyHand.Game
   alias StopMyHand.Game.Player
   alias StopMyHand.Game.Round
+  alias StopMyHand.Game.Score
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.MatchDriver
 
@@ -18,23 +19,21 @@ defmodule StopMyHandWeb.Game.Match do
     <div class="flex flex-col gap-5 items-center justify-center">
       <h1 class="text-8xl">ROUND <%= @round_number %></h1>
       <div id="counter" class="shadow-md text-6xl"></div>
-      <div id="game" class={["flex flex-col gap-5 items-center justify-center", (if @reviewing, do: "", else: "hidden")]} phx-hook="MatchHook">
+      <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
         <div id="letter" class="text-8xl text-accent"></div>
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
-          <div class="flex flex-column gap-3">
-            <.input field={f[:name]} label="Name" data-category="name" />
-            <.input field={f[:last_name]} label="Last Name" data-category="last-name" />
-            <.input field={f[:city]} label="City" data-category="city" />
-            <.input field={f[:color]} label="Color" data-category="color" />
-            <.input field={f[:animal]} label="Animal" data-category="animal" />
-            <.input field={f[:thing]} label="Thing" data-category="thing" />
+          <div class="flex gap-3">
+            <%= for category <- @categories do %>
+              <.scored_field form={f} category={category} score={get_in(@player_data, [@current_user.id, :answers, category, :result])} />
+            <% end %>
           </div>
         </.simple_form>
         <.player_view players={@players}
-          player_answers={@player_answers}
+          player_data={@player_data}
           reviewing={@reviewing}
-          player_reviews={@player_reviews}
           current_category={@current_category}
+          current_user_id={@current_user.id}
+          categories={@categories}
           />
       </div>
     </div>
@@ -49,10 +48,9 @@ defmodule StopMyHandWeb.Game.Match do
     |> assign(:round, %Round{})
     |> assign(:round_number, 1)
     |> assign(:players, [])
-    |> assign(:player_answers, %{})
-    |> assign(:categories, @ordered_cats)
+    |> assign(:player_data, %{})
+    |> assign(:categories, @categories)
     |> assign(:reviewing, false)
-    |> assign(:player_reviews, %{})
     |> assign(:current_category, :name)
     |> push_event("connect_match", %{match_id: match.id})
     |> start_async(:fetch_players, fn -> Game.get_match_players(match.id) end)
@@ -60,103 +58,95 @@ defmodule StopMyHandWeb.Game.Match do
   end
 
   def handle_async(:fetch_players, {:ok, players}, socket) do
-    filtered_players = Enum.filter(players, fn player -> player.user_id != socket.assigns.current_user.id end)
-    players = Enum.map(filtered_players, fn player -> {player.user_id, player.user.username} end)
-    full_players =
-      if socket.assigns.current_user.id == socket.assigns.match.creator.id do
-        players
-      else
-        [{socket.assigns.match.creator.id, socket.assigns.match.creator.username}|players]
-      end
+    current_user_id = socket.assigns.current_user.id
+    creator_id = socket.assigns.match.creator.id
+
+    player_ids = for player <- players, do: player.user_id
+    full_player_ids = [creator_id|player_ids]
+
+    player_handles = for player <- players, do: {player.user_id, player.user.username}
+    full_player_handles =
+      if current_user_id == creator_id, do: player_handles, else: [{creator_id, socket.assigns.match.creator.username}|player_handles]
+
+    player_data = enriched_player_data(full_player_ids, full_player_handles)
 
     {:noreply, socket
-     |> assign(:players, full_players)
-     |> assign(:player_answers, default_answers(full_players))
-     |> assign(:player_reviews, default_reviews(players, socket.assigns.current_user.id))
+     |> assign(:players, full_player_ids)
+     |> assign(:handles, full_player_handles)
+     |> assign(:player_data, player_data)
     }
   end
 
-  def handle_event("accept_answer", %{"playerid" => raw_player_id}, socket) do
+  def handle_event("review_answer", %{"playerid" => raw_player_id, "result" => result}, socket) do
     player_id = String.to_integer(raw_player_id)
+    current_user_id = socket.assigns.current_user.id
+
     # Update the driver's state
-    MatchDriver.report_review(socket.assigns.match.id, %{reviewer_id: socket.assigns.current_user.id, player_id: player_id, result: :accepted})
+    {:ok, updated_player_data} =
+      MatchDriver.report_review(socket.assigns.match.id, %{
+            reviewer_id: current_user_id,
+            player_id: player_id,
+            result: String.to_existing_atom(result)})
+    enriched_updated_player_data = enrich_with_handlers(updated_player_data, socket.assigns.handles)
 
-    current_category = socket.assigns.current_category
-    player_reviews = socket.assigns.player_reviews
-
-    #TODO: What category do we have to do?
-    new_player_reviews = put_in(player_reviews[player_id][current_category], :accepted)
-
-    # TODO: update the state to mark the answer as "voted" with the result
-    {:noreply, assign(socket, :player_reviews, new_player_reviews)}
+    {:noreply, assign(socket, :player_data, enriched_updated_player_data)}
   end
 
-  def handle_event("reject_answer", %{"playerid" => raw_player_id}, socket) do
-    player_id = String.to_integer(raw_player_id)
-    # Update the driver's state
-    MatchDriver.report_review(socket.assigns.match.id, %{reviewer_id: socket.assigns.current_user.id, player_id: player_id, result: :rejected})
-
-    current_category = socket.assigns.current_category
-    player_reviews = socket.assigns.player_reviews
-
-    #TODO: What category do we have to do?
-    new_player_reviews = put_in(player_reviews[player_id][current_category], :rejected)
-
-    # TODO: update the state to mark the answer as "voted" with the result
-    {:noreply, assign(socket, :player_reviews, new_player_reviews)}
-  end
-
-  def handle_event("enable_review", %{"category" => category, "answers" => answers}, socket) do
-    converted_answers = convert_payload(answers)
-    their_answers = Enum.filter(converted_answers, fn {player_id, _} -> player_id != socket.assigns.current_user.id end)
-
-    updated_player_answers = Map.new(their_answers, fn {player_id, player_answers} ->
-      {_id, handle} = Enum.find(socket.assigns.players, fn {id, _handle} -> id == player_id end)
-      {player_id, %{handle: handle, answers: player_answers}}
-    end)
+  def handle_event("enable_review", %{"category" => category}, socket) do
+    updated_player_data = enrich_with_handlers(MatchDriver.get_player_data(socket.assigns.match.id), socket.assigns.handles)
 
     {:noreply, socket
     |> assign(:reviewing, true)
-    |> assign(:player_answers, updated_player_answers)
-    |> assign(:current_category, String.to_existing_atom(category))
+    |> assign(:player_data, updated_player_data)
+    |> assign(:current_category, String.to_existing_atom(String.replace(category, "-", "_")))
     }
   end
 
   def handle_event("reset", _params, socket) do
-    IO.inspect("reset via hook")
     players = socket.assigns.players
+    handles = socket.assigns.handles
 
     {:noreply, socket
-     |> assign(:player_answers, default_answers(players))
-     |> assign(:player_reviews, default_reviews(players, socket.assigns.current_user.id))
+     |> assign(:player_data, enriched_player_data(players, handles))
      |> assign(:round, %Round{})
      |> assign(:reviewing, false)
+     |> assign(:current_category, Enum.at(@categories, 0))
     }
+  end
+
+  def handle_event("show_scores", _params, socket) do
+    updated_player_data =
+      enrich_with_handlers(MatchDriver.get_player_data(socket.assigns.match.id), socket.assigns.handles)
+
+    {:noreply, assign(socket, :player_data, updated_player_data)}
   end
 
   defp player_view(assigns) do
     ~H"""
     <div class="flex flex-col gap-3">
-      <%= for {player_id, data} <- @player_answers do %>
+      <%= for {player_id, data} <- @player_data, player_id != @current_user_id do %>
         <h2 class="text-4xl"><%= data.handle %></h2>
-        <div class="flex flex-row gap-2">
-          <%= for {{cat, _}, answer} <- Enum.sort_by(data.answers, fn {{_, i}, _} -> i end) do %>
-            <div class="flex flex-column gap-2 items-center justify-center">
-              <span class="font-bold text-xl"><%= cat %>:</span>
-              <span>
-                <%= if answer == "" do %>
-                  --
+        <div class="flex gap-2">
+          <%= for category <- @categories do %>
+            <div class="flex gap-2 items-center justify-center">
+              <span class="font-bold text-xl"><%= category %>:</span>
+              <div class="flex flex-col items-center justify-center">
+                <%= if get_in(data, [:answers, category, :result]) do %>
+                  <.score result={get_in(data, [:answers, category, :result])} />
+                <% end %>
+                <%= if data.answers[category].value == "" do %>
+                  <span>--</span>
                 <% else %>
-                  <div class={answer_class(@player_reviews[player_id][cat])}>
-                    <%= answer %>
+                  <div class={answer_class(get_in(data.answers, [category, :reviews, @current_user_id]))}>
+                    <%= data.answers[category].value %>
                   </div>
                 <% end %>
-              </span>
-              <%= if @reviewing && @current_category == cat && answer != "" do %>
-                <.button class={if @player_reviews[player_id][cat] == :accepted, do: "bg-accent", else: "bg-secondary"} phx-click="accept_answer" phx-value-playerid={player_id} phx-value-category={cat}>
+              </div>
+              <%= if @reviewing && @current_category == category && data.answers[category].value != "" do %>
+                <.button class={if data.answers[category].reviews[@current_user_id] == :accepted, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={player_id} phx-value-result="accepted">
                   <.icon name="hero-check" />
                 </.button>
-                <.button class={if @player_reviews[player_id][cat] == :rejected, do: "bg-accent", else: "bg-secondary"} phx-click="reject_answer" phx-value-playerid={player_id} phx-value-category={cat}>
+                <.button class={if data.answers[category].reviews[@current_user_id] == :rejected, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={player_id} phx-value-result="rejected">
                   <.icon name="hero-x-mark" />
                 </.button>
               <% end %>
@@ -167,7 +157,6 @@ defmodule StopMyHandWeb.Game.Match do
     </div>
     """
   end
-
   defp convert_payload(answers) do
     Map.new(answers, fn {player_id_str, categories} ->
       {
@@ -189,16 +178,42 @@ defmodule StopMyHandWeb.Game.Match do
     end
   end
 
-  defp default_answers(players) do
-    empty_categories = Map.new(@ordered_cats, fn e -> {e, ""} end)
-    Map.new(players, fn {id, username} -> {id, %{handle: username, answers: empty_categories}} end)
+  defp points_class(result) do
+    case result do
+      :accepted -> "text-green-600"
+      :rejected -> "text-orange-600"
+      :empty -> "text-red-600"
+    end
   end
 
-  defp default_reviews(players, current_user_id) do
-    empty_reviews = Map.new(@categories, fn cat -> {cat, :none} end)
+  defp enriched_player_data(player_ids, handlers) do
+    Score.default_player_data(player_ids) |> enrich_with_handlers(handlers)
+  end
 
-    players
-    |> Enum.filter(fn player_id -> player_id != current_user_id end)
-    |> Map.new(fn {player_id, _} -> {player_id, empty_reviews} end)
+  defp enrich_with_handlers(player_data, handlers) do
+    Enum.reduce(handlers, player_data, fn {player_id, handle}, acc ->
+      put_in(acc, [player_id, :handle], handle)
+    end)
+  end
+
+  defp scored_field(assigns) do
+    ~H"""
+    <div class="flex flex-col items-center justify-center">
+      <%= if assigns.score do %>
+        <.score result={@score} />
+      <% end %>
+      <div>
+        <.input field={@form[@category]} label={Phoenix.Naming.humanize(@category)} data-category={Atom.to_string(@category)}/>
+      </div>
+    </div>
+    """
+  end
+
+  defp score(assigns) do
+    ~H"""
+      <div class={[points_class(@result.reason), "font-bold"]}>
+        <%= @result.points %>
+      </div>
+    """
   end
 end

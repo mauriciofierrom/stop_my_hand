@@ -34,7 +34,6 @@ defmodule StopMyHandWeb.MatchChannel do
   end
 
   def handle_in("report_answers", answers, socket) do
-    IO.inspect(answers, label: "report answers")
     MatchDriver.player_answers(socket.assigns.match_id, socket.assigns.user, answers)
     {:noreply, socket}
   end
