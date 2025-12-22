@@ -43,8 +43,7 @@ Hooks.MatchHook = {
   mounted() {
     console.log("match hook mounted")
     window.addEventListener("match:review", ({detail: payload}) => {
-      console.log("match:review")
-      console.log(payload)
+      console.log(`match:review category: ${payload}`)
       this.pushEvent("enable_review", payload)
     })
 
@@ -53,6 +52,11 @@ Hooks.MatchHook = {
       const gameForm = document.querySelector("#round")
       gameForm.reset()
       this.pushEvent("reset", {})
+    })
+
+    window.addEventListener("match:score", (e) => {
+      console.log("match:score")
+      this.pushEvent("show_scores", {})
     })
   }
 }

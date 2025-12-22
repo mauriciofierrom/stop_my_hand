@@ -108,7 +108,6 @@ export function createMatch({matchId, timestamp}) {
     console.log(`round finished!: ${currentLetter}`)
     clearInterval(intervalId)
 
-
     onRoundEnd(currentLetter, gameFields, channel)
   })
 
@@ -124,13 +123,17 @@ export function createMatch({matchId, timestamp}) {
     onRoundStart(letter, channel)
   })
 
+  channel.on("show_scores", () => {
+    console.log("Show scores")
+    window.dispatchEvent(new CustomEvent("match:score"))
+  })
+
   channel.on("next_round", ({timeout}) => {
-    console.log(`The countdown ${timeout}`)
-
-    const event = new CustomEvent("match:reset")
-
+    console.log("on next round")
     // Tell LV to reset the thingies
-    window.dispatchEvent(event)
+    window.dispatchEvent(new CustomEvent("match:reset"))
+
+    console.log(`The countdown ${timeout}`)
 
     let countdown = timeout
 
@@ -151,9 +154,9 @@ export function createMatch({matchId, timestamp}) {
     }, 1000)
   })
 
-  channel.on("in_review", ({category, answers}) => {
-    console.log("in review")
-    onReview(category, answers, channel)
+  channel.on("in_review", ({category}) => {
+    console.log(`channel in_review category: ${category}`)
+    onReview(category, channel)
   })
 
   return channel
@@ -221,9 +224,8 @@ const onRoundStart = (letter, channel) => {
 const onRoundEnd = (letter, inputs, channel) => {
   console.log("onRoundEnd")
 
-  const score = calculateScore(letter, inputs)
   const roundTimeout = document.querySelector('#counter')
-  roundTimeout.classList.add("hidden")
+  // roundTimeout.classList.add("hidden")
   const letterElement = document.querySelector("#letter")
 
   letterElement.innerHTML = `Reviewing - ${letter}`
@@ -238,15 +240,16 @@ const onRoundEnd = (letter, inputs, channel) => {
   removeEvents(letter, inputs, channel)
 
   const answers = Object.fromEntries(Array.from(inputs).map(i => [i.dataset.category, i.value]))
+
   console.log(answers)
   channel.push("report_answers", answers)
-  // alert(`Score: ${score}`)
 }
 
-const onReview = (category, answers, channel) => {
+const onReview = (category, channel) => {
   const counterElement = document.querySelector('#counter')
   const reviewTimeout = 10
-  const event = new CustomEvent("match:review", { detail: {category, answers} })
+  console.log(`The onReview category ${category}`)
+  const event = new CustomEvent("match:review", { detail: {category: category} })
   let countdown = reviewTimeout
 
   counterElement.innerHTML = formatTime(countdown)
