@@ -73,6 +73,10 @@ defmodule StopMyHand.MatchDriver do
     GenServer.call(via_tuple(match_id), {:get_player_score, player_id})
   end
 
+  def get_player_scores(match_id) do
+    GenServer.call(via_tuple(match_id), :get_player_scores)
+  end
+
   def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined)+1 == length(expected) do
     all_joined = [player_id|joined]
     player_data = Score.default_player_data(all_joined)
@@ -163,6 +167,10 @@ defmodule StopMyHand.MatchDriver do
     {:reply, score[player_id], state}
   end
 
+  def handle_call(:get_player_scores, _from, %{score: score} = state) do
+    {:reply, score, state}
+  end
+
   def handle_info(:game_start, state) do
     payload = %{
       letter: state.letter,
@@ -208,6 +216,7 @@ defmodule StopMyHand.MatchDriver do
   def handle_info({:review_timeout, cat_idx}, state) when cat_idx >= length(@categories) - 1 do
     round_data_with_scores = Score.scores(state.player_data)
     broadcast("show_scores", state.match_id, %{})
+
     Process.send_after(self(), :show_scores_timeout, @next_round_timeout)
 
     {:noreply, %{state|game_status: :showing_scores, player_data: round_data_with_scores}}
@@ -243,6 +252,7 @@ defmodule StopMyHand.MatchDriver do
     }
 
     updated_score = update_match_score(state.player_data, state.score)
+    IO.inspect(updated_score, label: "Updated score")
 
     player_data = Score.default_player_data(state.joined)
 
@@ -292,7 +302,7 @@ defmodule StopMyHand.MatchDriver do
     for {player_id, data} <- player_data, reduce: current_match_score do
       current_scores ->
         round_score = Enum.reduce(data.answers, 0, fn {_cat, answer}, sum -> sum + answer.result.points end)
-        put_in(current_scores, player_id, current_scores[player_id] + round_score)
+        put_in(current_scores[player_id], current_scores[player_id] + round_score)
     end
   end
 end
