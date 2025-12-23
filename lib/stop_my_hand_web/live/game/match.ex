@@ -17,7 +17,7 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
-      <h1 class="text-8xl">ROUND <%= @round_number %></h1>
+      <h1 class="text-8xl">ROUND <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
       <div id="counter" class="shadow-md text-6xl"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
         <div id="letter" class="text-8xl text-accent"></div>
@@ -34,6 +34,7 @@ defmodule StopMyHandWeb.Game.Match do
           current_category={@current_category}
           current_user_id={@current_user.id}
           categories={@categories}
+          score={@score}
           />
       </div>
     </div>
@@ -52,6 +53,7 @@ defmodule StopMyHandWeb.Game.Match do
     |> assign(:categories, @categories)
     |> assign(:reviewing, false)
     |> assign(:current_category, :name)
+    |> assign(:score, %{})
     |> push_event("connect_match", %{match_id: match.id})
     |> start_async(:fetch_players, fn -> Game.get_match_players(match.id) end)
     }
@@ -105,10 +107,14 @@ defmodule StopMyHandWeb.Game.Match do
   def handle_event("reset", _params, socket) do
     players = socket.assigns.players
     handles = socket.assigns.handles
+    match_id = socket.assigns.match.id
+
+    new_score = MatchDriver.get_player_scores(match_id)
 
     {:noreply, socket
      |> assign(:player_data, enriched_player_data(players, handles))
      |> assign(:round, %Round{})
+     |> assign(:score, new_score)
      |> assign(:reviewing, false)
      |> assign(:current_category, Enum.at(@categories, 0))
     }
@@ -125,7 +131,12 @@ defmodule StopMyHandWeb.Game.Match do
     ~H"""
     <div class="flex flex-col gap-3">
       <%= for {player_id, data} <- @player_data, player_id != @current_user_id do %>
-        <h2 class="text-4xl"><%= data.handle %></h2>
+        <div class="flex gap-3 items-center text-4xl">
+          <h2><%= data.handle %></h2>
+          <div class="font-bold">
+            <%= Map.get(@score, player_id, 0) %>
+          </div>
+        </div>
         <div class="flex gap-2">
           <%= for category <- @categories do %>
             <div class="flex gap-2 items-center justify-center">
