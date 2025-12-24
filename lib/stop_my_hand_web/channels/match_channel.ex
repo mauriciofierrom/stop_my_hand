@@ -37,4 +37,12 @@ defmodule StopMyHandWeb.MatchChannel do
     MatchDriver.player_answers(socket.assigns.match_id, socket.assigns.user, answers)
     {:noreply, socket}
   end
+
+  def handle_in("player_activity", params, socket) do
+    params_with_player_id = Map.put(params, :player_id, socket.assigns.user)
+
+    broadcast(socket, "player_activity", params_with_player_id)
+
+    {:noreply, socket}
+  end
 end
