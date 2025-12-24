@@ -21,6 +21,12 @@ defmodule StopMyHandWeb.MatchChannel do
     {:ok, assign(socket, :match_id, match_id)}
   end
 
+  @impl true
+  def terminate({:shutdown, _reason}, socket) do
+    IO.inspect("terminate")
+    MatchDriver.player_left(socket.assigns.match_id, socket.assigns.user)
+  end
+
   # Player-triggered end of round (they filled all the fields)
   def handle_in("player_finished", params, socket) do
     MatchDriver.round_finished(socket.assigns.match_id)

@@ -163,6 +163,11 @@ export function createMatch({matchId, timestamp}) {
     window.dispatchEvent(new CustomEvent("match:onPlayerActivity", {detail: params}))
   })
 
+  channel.on("game_finished", () => {
+    console.log("GAME OVER!")
+    window.location = "/"
+  })
+
   return channel
 }
 
