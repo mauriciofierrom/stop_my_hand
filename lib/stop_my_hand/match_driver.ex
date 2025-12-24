@@ -49,6 +49,10 @@ defmodule StopMyHand.MatchDriver do
     GenServer.call(via_tuple(match_id), {:add_player, player_id})
   end
 
+  def player_left(match_id, player_id) do
+    GenServer.call(via_tuple(match_id), {:remove_player, player_id})
+  end
+
   def pick_letter(match_id) do
     GenServer.call(via_tuple(match_id), :pick_letter)
   end
@@ -105,6 +109,20 @@ defmodule StopMyHand.MatchDriver do
   # On any other game state the player is considered pending and will be moved before the new round starts
   def handle_call({:add_player, player_id}, _from, %{pending: pending} = state) do
     {:reply, :ok, %{state|pending: [player_id|pending]}}
+  end
+
+  def handle_call({:remove_player, player_id}, _from, %{game_status: :init} = state), do: {:reply, :ok, state}
+
+  # We're out, there's not enough players and we're not in the initialization phase to be lenient
+  def handle_call({:remove_player, player_id}, _from, %{joined: joined} = state) when (length(joined) - 1) <= 1 do
+    # Tell the channels to redirect
+    broadcast("game_finished", state.match_id, %{})
+
+    {:stop, :no_quorum, state}
+  end
+
+  def handle_call({:remove_player, player_id}, _from, state) do
+    {:reply, :ok, %{state|joined: state.joined -- [player_id]}}
   end
 
   def handle_call(:pick_letter, _from, %{alphabet: []} = state), do: {:reply, {:error, "No more letters"}, state}
@@ -252,8 +270,6 @@ defmodule StopMyHand.MatchDriver do
     }
 
     updated_score = update_match_score(state.player_data, state.score)
-    IO.inspect(updated_score, label: "Updated score")
-
     player_data = Score.default_player_data(state.joined)
 
     broadcast("round_start", state.match_id, payload)
