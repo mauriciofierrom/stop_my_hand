@@ -159,6 +159,10 @@ export function createMatch({matchId, timestamp}) {
     onReview(category, channel)
   })
 
+  channel.on("player_activity", (params) => {
+    window.dispatchEvent(new CustomEvent("match:onPlayerActivity", {detail: params}))
+  })
+
   return channel
 }
 
@@ -170,6 +174,16 @@ const handleEnterEvent = (channel, letter, inputs) => {
   })
 }
 
+const handleBlurEvent = (channel, letter) => {
+  return (event => {
+    channel.push("player_activity", {
+      category: event.target.dataset.category,
+      letter: letter,
+      size: event.target.value.length
+    })
+  })
+}
+
 const isValid = (letter, input) =>
       input.value && input.value[0].toUpperCase() === letter.toUpperCase()
 
@@ -177,12 +191,17 @@ const validateFields = (letter, inputs) =>
   Array.from(inputs).every(i => isValid(letter, i))
 
 const addEvents = (letter, inputs, channel) => {
-  inputs.forEach(input =>
-    input.addEventListener("keypress", handleEnterEvent(channel, letter, inputs)))
+  inputs.forEach(input => {
+    input.addEventListener("keypress", handleEnterEvent(channel, letter, inputs))
+    input.addEventListener("blur", handleBlurEvent(channel, letter))
+  })
 }
 
 const removeEvents = (letter, inputs, channel) => {
-  inputs.forEach(input => removeEventListener("keypress", handleEnterEvent(channel, letter, inputs)))
+  inputs.forEach(input => {
+    removeEventListener("keypress", handleEnterEvent(channel, letter, inputs))
+    removeEventListener("blur", handleBlurEvent(channel, letter))
+  })
 }
 
 const calculateScore = (letter, inputs) =>

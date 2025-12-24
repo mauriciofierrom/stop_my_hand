@@ -58,6 +58,11 @@ Hooks.MatchHook = {
       console.log("match:score")
       this.pushEvent("show_scores", {})
     })
+
+    window.addEventListener("match:onPlayerActivity", ({detail: payload}) => {
+      console.log("player_activity")
+      this.pushEvent("player_activity", payload)
+    })
   }
 }
 

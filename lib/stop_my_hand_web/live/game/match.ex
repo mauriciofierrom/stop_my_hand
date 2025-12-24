@@ -9,6 +9,7 @@ defmodule StopMyHandWeb.Game.Match do
   alias StopMyHand.Game.Round
   alias StopMyHand.Game.Score
   alias StopMyHandWeb.Endpoint
+  alias StopMyHandWeb.Game.Match.PlayerActivity
   alias StopMyHand.MatchDriver
 
   @categories [:name, :last_name, :city, :color, :animal, :thing]
@@ -18,9 +19,9 @@ defmodule StopMyHandWeb.Game.Match do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
       <h1 class="text-8xl">ROUND <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
-      <div id="counter" class="shadow-md text-6xl"></div>
+      <div id="counter" class="shadow-md text-6xl" phx-update="ignore"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
-        <div id="letter" class="text-8xl text-accent"></div>
+        <div id="letter" class="text-8xl text-accent" phx-update="ignore"></div>
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
           <div class="flex gap-3">
             <%= for category <- @categories do %>
@@ -28,14 +29,21 @@ defmodule StopMyHandWeb.Game.Match do
             <% end %>
           </div>
         </.simple_form>
-        <.player_view players={@players}
-          player_data={@player_data}
-          reviewing={@reviewing}
-          current_category={@current_category}
-          current_user_id={@current_user.id}
-          categories={@categories}
-          score={@score}
-          />
+        <div class="flex flex-col gap-3">
+          <%= for {player_id, data} <- @player_data, player_id != @current_user.id do %>
+            <div class="flex gap-3 items-center text-4xl">
+              <h2><%= data.handle %></h2>
+              <div class="font-bold">
+                <%= Map.get(@score, player_id, 0) %>
+              </div>
+            </div>
+            <%= unless @reviewing do %>
+              <.player_activity player_activity={@player_activity} categories={@categories} player_id={player_id} />
+            <% else %>
+              <.player_review player_id={player_id} player_data={data} categories={@categories} current_user_id={@current_user.id} current_category={@current_category} />
+            <% end %>
+          <% end %>
+        </div>
       </div>
     </div>
     """
@@ -54,6 +62,7 @@ defmodule StopMyHandWeb.Game.Match do
     |> assign(:reviewing, false)
     |> assign(:current_category, :name)
     |> assign(:score, %{})
+    |> assign(:player_activity, %{})
     |> push_event("connect_match", %{match_id: match.id})
     |> start_async(:fetch_players, fn -> Game.get_match_players(match.id) end)
     }
@@ -76,6 +85,7 @@ defmodule StopMyHandWeb.Game.Match do
      |> assign(:players, full_player_ids)
      |> assign(:handles, full_player_handles)
      |> assign(:player_data, player_data)
+     |> assign(:player_activity, default_player_activity(full_player_ids, @categories))
     }
   end
 
@@ -104,6 +114,18 @@ defmodule StopMyHandWeb.Game.Match do
     }
   end
 
+  def handle_event("player_activity", params, socket) do
+    player_activity = socket.assigns.player_activity
+
+    letter = String.upcase(params["letter"])
+    obfuscate = fn letter, size -> String.duplicate(letter, size) end
+
+    updated_player_activity
+      = put_in(player_activity, [params["player_id"], String.to_existing_atom(params["category"])], obfuscate.(letter, params["size"]))
+
+    {:noreply, assign(socket, :player_activity, updated_player_activity)}
+  end
+
   def handle_event("reset", _params, socket) do
     players = socket.assigns.players
     handles = socket.assigns.handles
@@ -116,6 +138,7 @@ defmodule StopMyHandWeb.Game.Match do
      |> assign(:round, %Round{})
      |> assign(:score, new_score)
      |> assign(:reviewing, false)
+     |> assign(:player_activity, default_player_activity(socket.assigns.players, @categories))
      |> assign(:current_category, Enum.at(@categories, 0))
     }
   end
@@ -127,47 +150,6 @@ defmodule StopMyHandWeb.Game.Match do
     {:noreply, assign(socket, :player_data, updated_player_data)}
   end
 
-  defp player_view(assigns) do
-    ~H"""
-    <div class="flex flex-col gap-3">
-      <%= for {player_id, data} <- @player_data, player_id != @current_user_id do %>
-        <div class="flex gap-3 items-center text-4xl">
-          <h2><%= data.handle %></h2>
-          <div class="font-bold">
-            <%= Map.get(@score, player_id, 0) %>
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <%= for category <- @categories do %>
-            <div class="flex gap-2 items-center justify-center">
-              <span class="font-bold text-xl"><%= category %>:</span>
-              <div class="flex flex-col items-center justify-center">
-                <%= if get_in(data, [:answers, category, :result]) do %>
-                  <.score result={get_in(data, [:answers, category, :result])} />
-                <% end %>
-                <%= if data.answers[category].value == "" do %>
-                  <span>--</span>
-                <% else %>
-                  <div class={answer_class(get_in(data.answers, [category, :reviews, @current_user_id]))}>
-                    <%= data.answers[category].value %>
-                  </div>
-                <% end %>
-              </div>
-              <%= if @reviewing && @current_category == category && data.answers[category].value != "" do %>
-                <.button class={if data.answers[category].reviews[@current_user_id] == :accepted, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={player_id} phx-value-result="accepted">
-                  <.icon name="hero-check" />
-                </.button>
-                <.button class={if data.answers[category].reviews[@current_user_id] == :rejected, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={player_id} phx-value-result="rejected">
-                  <.icon name="hero-x-mark" />
-                </.button>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
   defp convert_payload(answers) do
     Map.new(answers, fn {player_id_str, categories} ->
       {
@@ -207,6 +189,12 @@ defmodule StopMyHandWeb.Game.Match do
     end)
   end
 
+  defp default_player_activity(player_ids, categories) do
+    for player_id <- player_ids, into: %{} do
+      {player_id, (for category <- categories, into: %{}, do: {category, "---"})}
+    end
+  end
+
   defp scored_field(assigns) do
     ~H"""
     <div class="flex flex-col items-center justify-center">
@@ -225,6 +213,53 @@ defmodule StopMyHandWeb.Game.Match do
       <div class={[points_class(@result.reason), "font-bold"]}>
         <%= @result.points %>
       </div>
+    """
+  end
+
+  def player_activity(assigns) do
+    ~H"""
+      <div class="flex gap-2">
+        <%= for {category, activity} <- @player_activity[@player_id] do %>
+          <div class="flex gap-2 items-center justify-center">
+            <span class="font-bold text-xl"><%= category %>:</span>
+            <div class="flex flex-col items-center justify-center">
+              <%= activity %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    """
+  end
+
+  defp player_review(assigns) do
+    ~H"""
+    <div class="flex gap-2">
+      <%= for category <- @categories do %>
+        <div class="flex gap-2 items-center justify-center">
+          <span class="font-bold text-xl"><%= category %>:</span>
+          <div class="flex flex-col items-center justify-center">
+            <%= if get_in(@player_data, [:answers, category, :result]) do %>
+              <.score result={get_in(@player_data, [:answers, category, :result])} />
+            <% end %>
+            <%= if @player_data.answers[category].value == "" do %>
+              <span>--</span>
+            <% else %>
+              <div class={answer_class(get_in(@player_data.answers, [category, :reviews, @current_user_id]))}>
+                <%= @player_data.answers[category].value %>
+              </div>
+            <% end %>
+          </div>
+          <%= if @current_category == category && @player_data.answers[category].value != "" do %>
+            <.button class={if @player_data.answers[category].reviews[@current_user_id] == :accepted, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="accepted">
+              <.icon name="hero-check" />
+            </.button>
+            <.button class={if @player_data.answers[category].reviews[@current_user_id] == :rejected, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="rejected">
+              <.icon name="hero-x-mark" />
+            </.button>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
     """
   end
 end
