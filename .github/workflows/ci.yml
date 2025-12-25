@@ -15,14 +15,14 @@ jobs:
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    name: OTP 25 / Elixir 1.15.17
+    name: OTP 28 / Elixir 1.18.4
     env:
       POSTGRES_USER: postgres
     steps:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 25
-          elixir-version: 1.15.7
+          otp-version: 28
+          elixir-version: 1.18.4
       - run: mix deps.get
       - run: mix test
