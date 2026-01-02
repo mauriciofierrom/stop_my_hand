@@ -1,12 +1,15 @@
 defmodule StopMyHandWeb.Main do
   use StopMyHandWeb, :live_view
 
+  alias StopMyHand.Repo
   alias StopMyHand.Friendship
   alias StopMyHand.Accounts
+  alias StopMyHand.Notification
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHandWeb.Friendship.List
   alias StopMyHandWeb.Game.CreateMatch
   alias StopMyHandWeb.Endpoint
+  alias StopMyHandWeb.Notification
   alias StopMyHandWeb.Presence
   alias StopMyHand.Cache
 
@@ -21,8 +24,13 @@ defmodule StopMyHandWeb.Main do
         <.live_component module={CreateMatch} id="create_match" friends={@friends} current_user={assigns.current_user} />
         <.game_invite game_id={@game_invite.game_id} invitee_handle={@game_invite.invitee_handle} show={@game_invite.show} />
       </div>
-      <div>
-        <List.friend_list current_user={assigns.current_user} friends={@friends} invites={@invites}/>
+      <div class="flex gap-2 justify-between">
+        <div class="flex-1">
+          <List.friend_list current_user={assigns.current_user} friends={@friends} invites={@invites}/>
+        </div>
+        <div class="flex-shrink-0">
+          <.live_component id="notifications" module={StopMyHandWeb.Notification} notifications={@streams.notifications} unread_count={@unread_count} />
+        </div>
       </div>
     </div>
     """
@@ -35,12 +43,18 @@ defmodule StopMyHandWeb.Main do
     # TODO: Move to the handle_param stuff
     Endpoint.subscribe("#{@notification}:#{current_user.id}")
 
+    notifications = StopMyHand.Notification.fetch_notifications(current_user.id)
+    unread_count = Enum.count(notifications, & &1.status == "unread")
+
     {:ok, socket
     |> assign(:game_invite, %{game_id: nil, invitee_handle: "", show: false})
     |> assign_async(:invites, fn -> {:ok, %{invites: Friendship.get_pending_invites(current_user.id)}} end)
     |> assign(:friends, AsyncResult.ok([]))
     |> start_async(:fetch_friends, fn -> Friendship.get_friends(current_user.id) end)
-    |> assign(:show_create_match_modal, false)}
+    |> assign(:show_create_match_modal, false)
+    |> assign(:unread_count, unread_count)
+    |> stream(:notifications, notifications)
+    }
   end
 
   def handle_async(:fetch_friends, {:ok, friends}, socket) do
@@ -102,8 +116,31 @@ defmodule StopMyHandWeb.Main do
     {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
   end
 
-  def handle_info(%{event: "game_invite", payload: %{game_id: game_id, invitee_handle: handle}}, socket) do
-    {:noreply, assign(socket, :game_invite, %{game_id: game_id, invitee_handle: handle, show: true})}
+  def handle_info(%{event: "game_invite", payload: notification_id}, socket) do
+    notification = Repo.get!(StopMyHand.Notification.Notification, notification_id)
+    IO.inspect(notification, label: "Notification")
+
+    {:noreply, socket
+     |> update(:unread_count, &(&1 + 1))
+     |> stream_insert(:notifications, notification, at: 0)
+     |> assign(:game_invite, %{
+           game_id: notification.metadata["match_id"],
+           invitee_handle: notification.metadata["invitee"],
+           show: true})
+    }
+  end
+
+  def handle_event("notification_read", %{"id" => notification_id}, socket) do
+    case StopMyHand.Notification.mark_as_read(String.to_integer(notification_id)) do
+      {:ok, _} ->
+        notifications = StopMyHand.Notification.fetch_notifications(socket.assigns.current_user.id)
+        unread_count = Enum.count(notifications, &(&1.status == "unread"))
+        {:noreply, socket
+         |> stream(:notifications, notifications)
+         |> assign(:unread_count, unread_count)
+        }
+      {:error, _} -> {:noreply, socket}
+    end
   end
 
   def create_match(js \\ %JS{}) do

@@ -2,6 +2,7 @@ let Hooks = {}
 
 Hooks.ConfirmInvite = {
   mounted() {
+    console.log("confirm invite")
     this.el.addEventListener("click", (event) => {
       event.preventDefault()
       const confirmed = confirm("Are you sure you want to send invite?")
@@ -62,6 +63,16 @@ Hooks.MatchHook = {
     window.addEventListener("match:onPlayerActivity", ({detail: payload}) => {
       console.log("player_activity")
       this.pushEvent("player_activity", payload)
+    })
+  }
+}
+
+Hooks.NotificationHover = {
+  mounted() {
+    console.log("NotificationHover mounted")
+    this.el.addEventListener("mouseenter", (e) => {
+      console.log(`The notification id: ${this.el.dataset.notificationId}`)
+      this.pushEvent("notification_read", { id: this.el.dataset.notificationId })
     })
   }
 }

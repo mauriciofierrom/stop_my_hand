@@ -36,23 +36,28 @@ defmodule StopMyHandWeb.Game.Lobby do
     match_topic = "match:#{match.id}"
     current_user = socket.assigns.current_user
 
-    if connected?(socket) do
-      Presence.track(socket.transport_pid, match_topic, current_user.id, %{})
-      Endpoint.subscribe("match_changes:#{params["match_id"]}")
+    case GenServer.whereis({:via, Registry, {StopMyHand.Registry, match.id}}) do
+      nil ->
+        if connected?(socket) do
+          Presence.track(socket.transport_pid, match_topic, current_user.id, %{})
+          Endpoint.subscribe("match_changes:#{params["match_id"]}")
+        end
+
+        online_users = Presence.list(match_topic)
+
+        players_with_status = Enum.map([%Player{user: match.creator, match_id: match.id} | match.players], fn player ->
+          status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
+          {player, status}
+        end)
+
+        {:ok,
+        socket
+        |> assign(:players, AsyncResult.ok(players_with_status))
+        |> assign(:match, match)
+        }
+      _pid ->
+        {:ok, push_navigate(socket, to: ~p"/match/#{match.id}")}
     end
-
-    online_users = Presence.list(match_topic)
-
-    players_with_status = Enum.map([%Player{user: match.creator, match_id: match.id} | match.players], fn player ->
-      status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
-      {player, status}
-    end)
-
-    {:ok,
-     socket
-     |> assign(:players, AsyncResult.ok(players_with_status))
-     |> assign(:match, match)
-    }
   end
 
   def handle_event("play", _params, socket) do
