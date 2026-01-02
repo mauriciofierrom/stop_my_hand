@@ -20,7 +20,7 @@ defmodule StopMyHandWeb.Friendship.Search do
           ]}>
             <%= if !Enum.empty?(results) do %>
               <%= for result <- results do %>
-                <.result_item user={result} myself={@myself}/>
+                <.result_item user={result}/>
               <% end %>
             <% else %>
               No results

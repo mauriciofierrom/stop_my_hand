@@ -9,13 +9,19 @@ defmodule StopMyHand.Game do
   alias StopMyHand.Repo
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.Game.{Match, Player}
+  alias StopMyHand.Notification
 
   def create_match(current_user, attrs) do
-    case insert_match(attrs) do
-      {:ok, match} ->
-        notify_players(current_user.username, match)
+    case Repo.transact(fn ->
+      with {:ok, match} <- insert_match(attrs),
+          {:ok, notifications} <- Notification.notify_players(current_user.username, match) do
+        {:ok, {match, notifications}}
+      end
+    end) do
+      {:ok, {match, notifications}} ->
+        Notification.broadcast_notifications(notifications)
         {:ok, match}
-      {:error, changeset} -> {:error, changeset.errors}
+      error -> error
     end
   end
 
@@ -38,14 +44,5 @@ defmodule StopMyHand.Game do
     %Match{}
     |> Match.changeset(attrs)
     |> Repo.insert()
-  end
-
-  defp notify_players(invitee_handle, match) do
-    Enum.each(match.players, fn player ->
-      Endpoint.broadcast("#{@notification}:#{player.user_id}",
-        "game_invite",
-        %{game_id: match.id, invitee_handle: invitee_handle}
-      )
-    end)
   end
 end
