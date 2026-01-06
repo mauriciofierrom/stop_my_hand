@@ -61,14 +61,14 @@ defmodule StopMyHandWeb.Game.Lobby do
   end
 
   def handle_event("play", _params, socket) do
-    player_ids = Enum.map(socket.assigns.match.players, fn %Player{user_id: user_id} -> user_id end)
-    full_player_ids = [ socket.assigns.match.creator.id | player_ids ]
+    players = for player <- socket.assigns.match.players, do: player.user
+    full_players = [socket.assigns.match.creator|players]
 
     # Start the driver for this match
     case DynamicSupervisor
       .start_child(StopMyHand.DynamicSupervisor,
         {StopMyHand.MatchDriver,
-         %{player_ids: full_player_ids, match_id: socket.assigns.match.id}}) do
+         %{players: full_players, match_id: socket.assigns.match.id}}) do
       {:ok, _pid} ->
         Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
       {:error, reason} -> IO.inspect(reason, label: "Match Driver")

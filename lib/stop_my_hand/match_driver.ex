@@ -17,29 +17,30 @@ defmodule StopMyHand.MatchDriver do
   @round_timeout (@countdown * 1_000) + 180_000
   @categories [:name, :last_name, :city, :color, :animal, :thing]
 
-  def start_link(%{player_ids: player_ids, match_id: match_id}) do
-    GenServer.start_link(__MODULE__, {player_ids, match_id}, name: via_tuple(match_id))
+  def start_link(%{players: players, match_id: match_id}) do
+    GenServer.start_link(__MODULE__, {players, match_id}, name: via_tuple(match_id))
   end
 
-  def init({expected_player_ids, match_id}) do
+  def init({expected_players, match_id}) do
     {starting_letter, alphabet} = pick_letter_from(make_alphabet())
 
     Process.send_after(self(), :no_quorum, @quorum_timeout)
+    player_data = Score.default_player_data(expected_players)
 
     initial_state = %{
       match_id: match_id,
       alphabet: alphabet,
       round: 1,
       letter: starting_letter,
-      expected: expected_player_ids,
+      expected: expected_players,
       joined: [],
       pending: [],
       game_status: :init,
       answers: %{},
       cat_index: 0,
       players_answered: [],
-      player_data: %{},
-      score: (for expected_player_id <- expected_player_ids, into: %{}, do: {expected_player_id, 0})
+      player_data: player_data,
+      score: (for expected_player <- expected_players, into: %{}, do: {expected_player.id, 0})
     }
 
     {:ok, initial_state}
@@ -51,10 +52,6 @@ defmodule StopMyHand.MatchDriver do
 
   def player_left(match_id, player_id) do
     GenServer.call(via_tuple(match_id), {:remove_player, player_id})
-  end
-
-  def pick_letter(match_id) do
-    GenServer.call(via_tuple(match_id), :pick_letter)
   end
 
   def round_finished(match_id) do
@@ -81,24 +78,27 @@ defmodule StopMyHand.MatchDriver do
     GenServer.call(via_tuple(match_id), :get_player_scores)
   end
 
-  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined)+1 == length(expected) do
-    all_joined = [player_id|joined]
-    player_data = Score.default_player_data(all_joined)
+  def get_match_state(match_id) do
+    GenServer.call(via_tuple(match_id), :get_match_state)
+  end
 
+  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) + 1 == length(expected) do
+    all_joined = [player_id|joined]
     Process.send_after(self(), :game_start, @game_start_timeout)
 
-    {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing, player_data: player_data}}
+    {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing}}
   end
 
   # Only on the init state we add players to mark them as JOINED
   # In this case we've arrived at at least two players so we start the timeout, if the timeout happens before we have full quorum we're set
-  def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) when length(joined) >= 1 do
+  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) >= 1 do
     joined = [player_id|joined]
-    player_data = Score.default_player_data(joined)
 
+    # TODO: What happens when one of the two only players leaves? 
+    # When we have at least 2 players joined we
     Process.send_after(self(), :game_start, @game_start_timeout)
 
-    {:reply, :ok, %{state|joined: joined, game_status: :ongoing, player_data: player_data}}
+    {:reply, :ok, %{state|joined: joined}}
   end
 
   # Only on the init state we add players to mark them as JOINED
@@ -125,13 +125,6 @@ defmodule StopMyHand.MatchDriver do
     {:reply, :ok, %{state|joined: state.joined -- [player_id]}}
   end
 
-  def handle_call(:pick_letter, _from, %{alphabet: []} = state), do: {:reply, {:error, "No more letters"}, state}
-
-  def handle_call(:pick_letter, _from, %{alphabet: alphabet} = state) do
-    {letter, new_alphabet} = pick_letter_from(alphabet)
-    {:reply, {:ok, letter}, %{state|alphabet: new_alphabet}}
-  end
-
   def handle_call(:round_finished, _from, state) do
     broadcast("round_finished", state.match_id, %{})
 
@@ -140,6 +133,8 @@ defmodule StopMyHand.MatchDriver do
   end
 
   def handle_call({:player_answers, player_id, player_answers}, _from, state) do
+    IO.inspect(player_answers, label: "Player answers")
+
     player_data = state.player_data
 
     updated_player_data =
@@ -189,6 +184,25 @@ defmodule StopMyHand.MatchDriver do
     {:reply, score, state}
   end
 
+  def handle_call(:get_match_state, _from, %{game_status: :init} = state), do: {:reply, {:normal, state.player_data}, state}
+
+  def handle_call(:get_match_state, _from, %{cat_index: idx, score: score, player_data: player_data, round: round} = state) do
+    # TODO: Player activity? Need to accumulate it
+    # scores
+    # current_category
+    # player_data
+    # round number
+    match_state = %{
+      score: state.score,
+      current_category: Enum.at(@categories, idx),
+      current_letter: state.letter,
+      player_data: player_data,
+      round_number: round
+    }
+
+    {:reply, {:ongoing, match_state}, state}
+  end
+
   def handle_info(:game_start, state) do
     payload = %{
       letter: state.letter,
@@ -200,7 +214,7 @@ defmodule StopMyHand.MatchDriver do
 
     Process.send_after(self(), :round_timeout, @round_timeout)
 
-    {:noreply, state}
+    {:noreply, %{state|game_status: :ongoing}}
   end
 
   def handle_info(:no_quorum, %{game_status: :init} = state) do
@@ -255,7 +269,10 @@ defmodule StopMyHand.MatchDriver do
     broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
     Process.send_after(self(), :next_round_timeout, @next_round_timeout)
 
-    {:noreply, %{state|game_status: :next_round}}
+    player_data = Score.default_player_data(state.expected)
+    updated_score = update_match_score(state.player_data, state.score)
+
+    {:noreply, %{state|game_status: :next_round, player_data: player_data, score: updated_score}}
   end
 
   # Timeout for next round has finished so we start the round
@@ -269,9 +286,6 @@ defmodule StopMyHand.MatchDriver do
       countdown: @countdown
     }
 
-    updated_score = update_match_score(state.player_data, state.score)
-    player_data = Score.default_player_data(state.joined)
-
     broadcast("round_start", state.match_id, payload)
 
     Process.send_after(self(), :round_timeout, @round_timeout)
@@ -283,9 +297,7 @@ defmodule StopMyHand.MatchDriver do
        round: new_round,
        letter: new_letter,
        cat_index: 0,
-       player_data: player_data,
        players_answered: [],
-       score: updated_score
      }
     }
   end

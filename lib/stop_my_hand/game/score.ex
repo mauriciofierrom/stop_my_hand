@@ -11,6 +11,7 @@ defmodule StopMyHand.Game.Score do
   end
 
   # 1 => %{
+#     handle: "handle",
   #   answers: %{
   #     name: %{
   #       value: "Link",
@@ -20,10 +21,13 @@ defmodule StopMyHand.Game.Score do
   #     }
   #   }
   # }
-  def default_player_data(player_ids) do
-    for player_id <- player_ids, into: %{} do
+  def default_player_data(players) do
+    player_ids = for player <- players, do: player.id
+
+    for player <- players, into: %{} do
       {
-        player_id, %{
+        player.id, %{
+          handle: player.username,
           answers: (for cat <- @categories, into: %{}, do: {
                       cat,
                       %{value: "", reviews: default_answer_reviews(player_ids)}})
@@ -51,7 +55,7 @@ defmodule StopMyHand.Game.Score do
 
       {category, repeated}
     end
-  end
+   end
 
   defp add_scores(round_data) do
     repeated = repeated_answers(round_data)

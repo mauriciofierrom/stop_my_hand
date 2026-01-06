@@ -21,7 +21,7 @@ defmodule StopMyHandWeb.Game.Match do
       <h1 class="text-8xl">ROUND <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
       <div id="counter" class="shadow-md text-6xl" phx-update="ignore"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
-        <div id="letter" class="text-8xl text-accent" phx-update="ignore"></div>
+        <div id="letter" class="text-8xl text-accent" phx-update="ignore"><%= Map.get(assigns, :current_letter, "") %></div>
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
           <div class="flex gap-3">
             <%= for category <- @categories do %>
@@ -50,42 +50,29 @@ defmodule StopMyHandWeb.Game.Match do
   end
 
   def mount(params, _session, socket) do
+    IO.inspect("mounting for some reason")
     match = Game.get_match(params["match_id"])
 
+    base_assigns = fn player_data ->
+      %{
+        categories: @categories,
+        reviewing: false,
+        round: %Round{},
+        match: match,
+        player_activity: default_player_activity(Map.keys(player_data), @categories),
+      }
+    end
+
+    {game_status, final_assigns} =
+      case MatchDriver.get_match_state(match.id) do
+        {:normal, player_data} -> {:normal, Map.merge(base_assigns.(player_data), initial_match_state(match, player_data))}
+        {:ongoing, current_match_state} -> {:ongoing, Map.merge(base_assigns.(current_match_state.player_data), current_match_state)}
+      end
+
     {:ok, socket
-    |> assign(:match, match)
-    |> assign(:round, %Round{})
-    |> assign(:round_number, 1)
-    |> assign(:players, [])
-    |> assign(:player_data, %{})
-    |> assign(:categories, @categories)
-    |> assign(:reviewing, false)
-    |> assign(:current_category, :name)
-    |> assign(:score, %{})
-    |> assign(:player_activity, %{})
-    |> push_event("connect_match", %{match_id: match.id})
-    |> start_async(:fetch_players, fn -> Game.get_match_players(match.id) end)
-    }
-  end
-
-  def handle_async(:fetch_players, {:ok, players}, socket) do
-    current_user_id = socket.assigns.current_user.id
-    creator_id = socket.assigns.match.creator.id
-
-    player_ids = for player <- players, do: player.user_id
-    full_player_ids = [creator_id|player_ids]
-
-    player_handles = for player <- players, do: {player.user_id, player.user.username}
-    full_player_handles =
-      if current_user_id == creator_id, do: player_handles, else: [{creator_id, socket.assigns.match.creator.username}|player_handles]
-
-    player_data = enriched_player_data(full_player_ids, full_player_handles)
-
-    {:noreply, socket
-     |> assign(:players, full_player_ids)
-     |> assign(:handles, full_player_handles)
-     |> assign(:player_data, player_data)
-     |> assign(:player_activity, default_player_activity(full_player_ids, @categories))
+     |> assign(final_assigns)
+     |> assign(:mode, game_mode(game_status))
+     |> push_event("connect_match", %{match_id: match.id})
     }
   end
 
@@ -99,13 +86,12 @@ defmodule StopMyHandWeb.Game.Match do
             reviewer_id: current_user_id,
             player_id: player_id,
             result: String.to_existing_atom(result)})
-    enriched_updated_player_data = enrich_with_handlers(updated_player_data, socket.assigns.handles)
 
-    {:noreply, assign(socket, :player_data, enriched_updated_player_data)}
+    {:noreply, assign(socket, :player_data, updated_player_data)}
   end
 
   def handle_event("enable_review", %{"category" => category}, socket) do
-    updated_player_data = enrich_with_handlers(MatchDriver.get_player_data(socket.assigns.match.id), socket.assigns.handles)
+    updated_player_data = MatchDriver.get_player_data(socket.assigns.match.id)
 
     {:noreply, socket
     |> assign(:reviewing, true)
@@ -127,25 +113,24 @@ defmodule StopMyHandWeb.Game.Match do
   end
 
   def handle_event("reset", _params, socket) do
-    players = socket.assigns.players
-    handles = socket.assigns.handles
     match_id = socket.assigns.match.id
 
+    # The server knows what's what and we just ask, missing intention
+    updated_player_data = MatchDriver.get_player_data(match_id)
     new_score = MatchDriver.get_player_scores(match_id)
 
     {:noreply, socket
-     |> assign(:player_data, enriched_player_data(players, handles))
+     |> assign(:player_data, updated_player_data)
      |> assign(:round, %Round{})
      |> assign(:score, new_score)
      |> assign(:reviewing, false)
-     |> assign(:player_activity, default_player_activity(socket.assigns.players, @categories))
+     |> assign(:player_activity, default_player_activity(Map.keys(updated_player_data), @categories))
      |> assign(:current_category, Enum.at(@categories, 0))
     }
   end
 
   def handle_event("show_scores", _params, socket) do
-    updated_player_data =
-      enrich_with_handlers(MatchDriver.get_player_data(socket.assigns.match.id), socket.assigns.handles)
+    updated_player_data = MatchDriver.get_player_data(socket.assigns.match.id)
 
     {:noreply, assign(socket, :player_data, updated_player_data)}
   end
@@ -179,21 +164,25 @@ defmodule StopMyHandWeb.Game.Match do
     end
   end
 
-  defp enriched_player_data(player_ids, handlers) do
-    Score.default_player_data(player_ids) |> enrich_with_handlers(handlers)
-  end
-
-  defp enrich_with_handlers(player_data, handlers) do
-    Enum.reduce(handlers, player_data, fn {player_id, handle}, acc ->
-      put_in(acc, [player_id, :handle], handle)
-    end)
-  end
-
   defp default_player_activity(player_ids, categories) do
     for player_id <- player_ids, into: %{} do
       {player_id, (for category <- categories, into: %{}, do: {category, "---"})}
     end
   end
+
+  defp initial_match_state(match, player_data) do
+    %{
+      match: match,
+      round: %Round{},
+      round_number: 1,
+      current_category: :name,
+      player_data: player_data,
+      score: %{}
+    }
+  end
+
+  defp game_mode(:normal), do: :active
+  defp game_mode(:ongoing), do: :spectator
 
   defp scored_field(assigns) do
     ~H"""
