@@ -51,7 +51,7 @@ let socket = new Socket("/game", {params: {token: window.userToken}})
 //     end
 //
 // Finally, connect to the socket:
-socket.connect()
+// socket.connect()
 
 // Now that you are connected, you can join channels with a topic.
 // Let's assume you have a channel with a topic named `room` and the
@@ -60,6 +60,9 @@ socket.connect()
 let intervalId = null
 
 export function createMatch({matchId, timestamp}) {
+  if(!socket.isConnected()) {
+    socket.connect()
+  }
   const offset = Math.abs(Date.now() - timestamp)
   let channel = socket.channel(`match:${matchId}`, {clockOffset: offset})
   let currentLetter = null
