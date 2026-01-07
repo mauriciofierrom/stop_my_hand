@@ -34,6 +34,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Deploy to Gigalixir
+        env:
+          GIGALIXIR_EMAIL: ${{ secrets.GIGALIXIR_EMAIL }}
+          GIGALIXIR_API_KEY: ${{ secrets.GIGALIXIR_API_KEY }}
+          GIGALIXIR_APP_NAME: ${{ secrets.GIGALIXIR_APP_NAME }}
         run: |
-          git remote add gigalixir https://${{secrets.GIGALIXIR_EMAIL}}:${{ secrets.GIGALIXIR_API_KEY}}@git.gigalixir.com/${{secrets.GIGALIXIR_APP_NAME}}.git
+          EMAIL_ENCODED=$(echo "$GIGALIXIR_EMAIL" | sed 's/@/%40/g')
+          git remote add gigalixir https://$EMAIL_ENCODED:$GIGALIXIR_API_KEY@git.gigalixir.com/$GIGALIXIR_APP_NAME.git
           git push gigalixir main
