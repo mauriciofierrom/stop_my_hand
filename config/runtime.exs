@@ -103,12 +103,4 @@ if config_env() == :prod do
 config :stop_my_hand, StopMyHand.Mailer,
   adapter: Swoosh.Adapters.Resend,
   api_key: System.get_env("RESEND_API_KEY")
-
-  #
-  # For this example you need include a HTTP client required by Swoosh API client.
-  # Swoosh supports Hackney and Finch out of the box:
-  #
-config :swoosh, :api_client, Swoosh.ApiClient.Hackney
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end
