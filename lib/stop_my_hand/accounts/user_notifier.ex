@@ -8,7 +8,7 @@ defmodule StopMyHand.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"StopMyHand", "contact@example.com"})
+      |> from({"StopMyHand", "contact@resend.dev"})
       |> subject(subject)
       |> text_body(body)
 
