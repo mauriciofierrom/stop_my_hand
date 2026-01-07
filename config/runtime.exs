@@ -99,8 +99,9 @@ if config_env() == :prod do
   # In production you need to configure the mailer to use a different adapter.
   # Also, you may need to configure the Swoosh API client of your choice if you
   # are not using SMTP. Here is an example of the configuration:
-  #
-config :stop_my_hand, StopMyHand.Mailer,
-  adapter: Swoosh.Adapters.Resend,
-  api_key: System.get_env("RESEND_API_KEY")
+
+# WARN: We disable this for now cuz we have no domain to send emails
+# config :stop_my_hand, StopMyHand.Mailer,
+#   adapter: Swoosh.Adapters.Resend,
+#   api_key: System.get_env("RESEND_API_KEY")
 end
