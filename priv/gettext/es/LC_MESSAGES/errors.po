@@ -1,0 +1,102 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "can't be blank"
+msgstr "no puede estar vacio"
+
+msgid "has already been taken"
+msgstr "ya existe"
+
+msgid "is invalid"
+msgstr "es invalido"
+
+msgid "must be accepted"
+msgstr "debe ser acceptado"
+
+msgid "has invalid format"
+msgstr "tiene un formato invalido"
+
+msgid "has an invalid entry"
+msgstr "tiene una entrada invalida"
+
+msgid "is reserved"
+msgstr "es reservado"
+
+msgid "does not match confirmation"
+msgstr "no concuerda con la confirmacion"
+
+msgid "is still associated with this entry"
+msgstr "aun esta asociado con esta entrada"
+
+msgid "are still associated with this entry"
+msgstr "aun estan asociados con esta entrada"
+
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] "deberia tener 1 item"
+msgstr[1] "deberia tener %{count} item(s)"
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] "deberia tener 1 caracter"
+msgstr[1] "deberia tener %{count} caracteres"
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] "deberia tener 1 byte"
+msgstr[1] "deberia tener %{count} byte(s)"
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] "deberia tener al menos 1 item"
+msgstr[1] "deberia tener al menos %{count} items"
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] "deberia tener al menos 1 caracter"
+msgstr[1] "deberia tener al menos %{count} caracteres"
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] "deberia tener al menos 1 byte"
+msgstr[1] "deberia tener al menos %{count} caracteres"
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] "deberia tener maximo 1 caracter"
+msgstr[1] "deberia tener maximo %{count} caracteres"
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] "deberia ser maximo 1 caracter"
+msgstr[1] "deberia ser maximo %{count} caracteres"
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] "deberia ser maximo 1 byte"
+msgstr[1] "deberia ser maximo %{count} bytes"
+
+msgid "must be less than %{number}"
+msgstr "deberia ser menos de %{number}"
+
+msgid "must be greater than %{number}"
+msgstr "deberia ser mayo a %{number}"
+
+msgid "must be less than or equal to %{number}"
+msgstr "deberia ser menos o igual a %{number}"
+
+msgid "must be greater than or equal to %{number}"
+msgstr "deberia ser mayor o igual a %{number}"
+
+msgid "must be equal to %{number}"
+msgstr "deberia ser igual a %{number}"

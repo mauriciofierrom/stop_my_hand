@@ -21,4 +21,8 @@ defmodule StopMyHandWeb.Gettext do
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
   use Gettext.Backend, otp_app: :stop_my_hand
+
+  def translate_category(atom) do
+    Gettext.dgettext(__MODULE__, "categories", Atom.to_string(atom))
+  end
 end

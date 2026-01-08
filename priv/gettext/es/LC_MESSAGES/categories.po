@@ -1,0 +1,17 @@
+msgid "name"
+msgstr "Nombre"
+
+msgid "last_name"
+msgstr "Apellido"
+
+msgid "city"
+msgstr "Ciudad"
+
+msgid "color"
+msgstr "Color"
+
+msgid "animal"
+msgstr "Animal"
+
+msgid "thing"
+msgstr "Cosa"

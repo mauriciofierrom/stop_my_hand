@@ -8,12 +8,12 @@ defmodule StopMyHandWeb.Friendship.Search do
     ~H"""
     <div class="w-1/4 h-full">
       <.modal id="search-friend">
-        <h1>Search friend</h1>
+        <h1><%= gettext("Search friend") %></h1>
         <.form for={%{}}>
           <.input id="search_friend" name="search_friend" value={""} phx-change="search_friend" phx-target={@myself} phx-debounce/>
         </.form>
         <.async_result :let={results} assign={@results}>
-          <:loading>Loading results...</:loading>
+          <:loading><%= gettext("Loading results") %>...</:loading>
           <:failed :let={_failure}>there was an error fetching users</:failed>
           <div class={[
             "flex flex-col mt-8"
@@ -23,7 +23,7 @@ defmodule StopMyHandWeb.Friendship.Search do
                 <.result_item user={result}/>
               <% end %>
             <% else %>
-              No results
+              <%= gettext("No results") %>
             <% end %>
           </div>
         </.async_result>
@@ -90,7 +90,7 @@ defmodule StopMyHandWeb.Friendship.Search do
           "phx-submit-loading:opacity-75 rounded-lg bg-accent hover:bg-primary py-2 px-3",
           "text-sm font-semibold leading-6 text-black active:text-black/80",
         ]}
-        id={ "invite-#{assigns.user.id}" } phx-hook="ConfirmInvite" data-userid={ assigns.user.id }>Invite</button>
+        id={ "invite-#{assigns.user.id}" } phx-hook="ConfirmInvite" data-userid={ assigns.user.id }><%= gettext("Invite") %></button>
     </div>
     """
   end

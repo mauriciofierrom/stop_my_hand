@@ -66,7 +66,7 @@ defmodule StopMyHandWeb.UserRegistrationLiveTest do
       assert html =~ email
       assert html =~ "Settings"
       assert html =~ "Log out"
-      assert html =~ "STOP MY HAND"
+      assert html =~ "Stop My Hand"
     end
 
     test "renders errors for duplicated email", %{conn: conn} do

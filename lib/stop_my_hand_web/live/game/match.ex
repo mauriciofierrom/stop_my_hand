@@ -18,7 +18,7 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
-      <h1 class="text-8xl">ROUND <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
+      <h1 class="text-8xl"><%= gettext("ROUND") %> <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
       <div id="counter" class="shadow-md text-6xl" phx-update="ignore"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
         <div id="letter" class="text-8xl text-accent" phx-update="ignore"><%= Map.get(assigns, :current_letter, "") %></div>
@@ -191,7 +191,7 @@ defmodule StopMyHandWeb.Game.Match do
         <.score result={@score} />
       <% end %>
       <div>
-        <.input field={@form[@category]} label={Phoenix.Naming.humanize(@category)} data-category={Atom.to_string(@category)}/>
+        <.input field={@form[@category]} label={translate_category(@category)} data-category={Atom.to_string(@category)}/>
       </div>
     </div>
     """
@@ -210,7 +210,7 @@ defmodule StopMyHandWeb.Game.Match do
       <div class="flex gap-2">
         <%= for {category, activity} <- @player_activity[@player_id] do %>
           <div class="flex gap-2 items-center justify-center">
-            <span class="font-bold text-xl"><%= category %>:</span>
+            <span class="font-bold text-xl"><%= translate_category(category) %>:</span>
             <div class="flex flex-col items-center justify-center">
               <%= activity %>
             </div>
@@ -225,7 +225,7 @@ defmodule StopMyHandWeb.Game.Match do
     <div class="flex gap-2">
       <%= for category <- @categories do %>
         <div class="flex gap-2 items-center justify-center">
-          <span class="font-bold text-xl"><%= category %>:</span>
+          <span class="font-bold text-xl"><%= translate_category(category) %>:</span>
           <div class="flex flex-col items-center justify-center">
             <%= if get_in(@player_data, [:answers, category, :result]) do %>
               <.score result={get_in(@player_data, [:answers, category, :result])} />

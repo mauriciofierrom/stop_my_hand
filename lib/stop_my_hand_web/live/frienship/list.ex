@@ -13,11 +13,11 @@ defmodule StopMyHandWeb.Friendship.List do
         <%= if assigns.invites.result && !(Enum.empty? assigns.invites.result) do %>
           <div class="w-full">
             <.async_result :let={invites} assign={assigns.invites}>
-              <:loading>Loading invites...</:loading>
+              <:loading><%= gettext("Loading invites") %>...</:loading>
               <:failed :let={_failure}>there was an error fetching invites</:failed>
               <div class={[]}>
                 <%= if !Enum.empty?(invites) do %>
-                  <h1>Invites</h1>
+                  <h1><%= gettext("Invites") %></h1>
                   <%= for invite <- invites do %>
                     <.invite_item invite={invite}/>
                   <% end %>
@@ -29,13 +29,13 @@ defmodule StopMyHandWeb.Friendship.List do
 
         <div class="w-full">
           <div class="flex flex-row">
-            <h1 class="text-accent mb-2 text-2xl">Friends</h1>
+            <h1 class="text-accent mb-2 text-2xl"><%= gettext("Friends") %></h1>
             <button data-testid="search-friend-button" -class="ml-auto" phx-click={show_modal("search-friend")}>
               <.icon name="hero-magnifying-glass" />
             </button>
           </div>
           <.async_result :let={friends} assign={assigns.friends}>
-            <:loading>Loading friends...</:loading>
+            <:loading><%= gettext("Loading friends") %>...</:loading>
             <:failed :let={_failure}>there was an error fetching invites</:failed>
             <div class={[]}>
               <%= if !Enum.empty?(friends) do %>
@@ -43,7 +43,7 @@ defmodule StopMyHandWeb.Friendship.List do
                   <.friend_item friend={friend}/>
                 <% end %>
               <% else %>
-                No friends. <.link href={~p"/start"}>Search for friends!</.link>
+                <%= gettext("No friends") %>. <.link href={~p"/start"}><%= gettext("Search for friends") %>!</.link>
               <% end %>
             </div>
           </.async_result>
