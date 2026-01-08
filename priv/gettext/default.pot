@@ -1,0 +1,165 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new messages manually only if they're dynamic
+## messages that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here has no
+## effect: edit them in PO (.po) files instead.
+#
+msgid ""
+msgstr ""
+
+#: lib/stop_my_hand_web/components/core_components.ex:474
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:93
+#, elixir-autogen, elixir-format
+msgid "Invite"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:20
+#, elixir-autogen, elixir-format
+msgid "Invites"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:38
+#, elixir-autogen, elixir-format
+msgid "Loading friends"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:16
+#, elixir-autogen, elixir-format
+msgid "Loading invites"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:16
+#, elixir-autogen, elixir-format
+msgid "Loading results"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:46
+#, elixir-autogen, elixir-format
+msgid "No friends"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:26
+#, elixir-autogen, elixir-format
+msgid "No results"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/match.ex:21
+#, elixir-autogen, elixir-format
+msgid "ROUND"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:46
+#, elixir-autogen, elixir-format
+msgid "Search for friends"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:11
+#, elixir-autogen, elixir-format
+msgid "Search friend"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/main_live.ex:23
+#, elixir-autogen, elixir-format
+msgid "Start Match"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/notification.ex:45
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "a match"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/core_components.ex:76
+#: lib/stop_my_hand_web/components/core_components.ex:128
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/notification.ex:45
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "invites you to"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:32
+#, elixir-autogen, elixir-format
+msgid "Friends"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/main_live.ex:22
+#, elixir-autogen, elixir-format
+msgid "Stop My Hand"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:11
+#, elixir-autogen, elixir-format
+msgid "Don't have an account?"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:20
+#, elixir-autogen, elixir-format
+msgid "Email"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:26
+#, elixir-autogen, elixir-format
+msgid "Forgot your password?"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:24
+#, elixir-autogen, elixir-format
+msgid "Keep me logged in"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:21
+#, elixir-autogen, elixir-format
+msgid "Password"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:31
+#, elixir-autogen, elixir-format
+msgid "Sign in"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:9
+#, elixir-autogen, elixir-format
+msgid "Sign in to account"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:13
+#, elixir-autogen, elixir-format
+msgid "Sign up"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:15
+#, elixir-autogen, elixir-format
+msgid "for an account now"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Log in"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Log out"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Register"
+msgstr ""
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Settings"
+msgstr ""

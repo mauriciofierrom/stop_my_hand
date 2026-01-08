@@ -42,7 +42,7 @@ defmodule StopMyHandWeb.Notification do
       <title>@title</title>
       <section>
         <p>
-          <strong><%= @metadata["invitee"] %></strong> invites you to <a href={~p"/lobby/#{@metadata["match_id"]}"}>a match!</a>
+          <strong><%= @metadata["invitee"] %></strong> <%= gettext("invites you to") %> <a href={~p"/lobby/#{@metadata["match_id"]}"}><%= gettext("a match") %>!</a>
         </p>
       </section>
     </div>

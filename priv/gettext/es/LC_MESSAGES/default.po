@@ -1,0 +1,165 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/stop_my_hand_web/components/core_components.ex:474
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr "Acciones"
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:93
+#, elixir-autogen, elixir-format
+msgid "Invite"
+msgstr "Invitacion"
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:20
+#, elixir-autogen, elixir-format
+msgid "Invites"
+msgstr "Invitaciones"
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:38
+#, elixir-autogen, elixir-format
+msgid "Loading friends"
+msgstr "Cargando amigos"
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:16
+#, elixir-autogen, elixir-format
+msgid "Loading invites"
+msgstr "Cargando invitaciones"
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:16
+#, elixir-autogen, elixir-format
+msgid "Loading results"
+msgstr "Cargando resultados"
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:46
+#, elixir-autogen, elixir-format
+msgid "No friends"
+msgstr "Sin amigos"
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:26
+#, elixir-autogen, elixir-format
+msgid "No results"
+msgstr "Sin resultados"
+
+#: lib/stop_my_hand_web/live/game/match.ex:21
+#, elixir-autogen, elixir-format
+msgid "ROUND"
+msgstr "RONDA"
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:46
+#, elixir-autogen, elixir-format
+msgid "Search for friends"
+msgstr "Buscar amigos"
+
+#: lib/stop_my_hand_web/live/frienship/search.ex:11
+#, elixir-autogen, elixir-format
+msgid "Search friend"
+msgstr "Buscar amigo"
+
+#: lib/stop_my_hand_web/live/main_live.ex:23
+#, elixir-autogen, elixir-format
+msgid "Start Match"
+msgstr "Comenzar Partida"
+
+#: lib/stop_my_hand_web/components/notification.ex:45
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "a match"
+msgstr "una partida"
+
+#: lib/stop_my_hand_web/components/core_components.ex:76
+#: lib/stop_my_hand_web/components/core_components.ex:128
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr "cerrar"
+
+#: lib/stop_my_hand_web/components/notification.ex:45
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "invites you to"
+msgstr "te invita a "
+
+#: lib/stop_my_hand_web/live/frienship/list.ex:32
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Friends"
+msgstr "Amigos"
+
+#: lib/stop_my_hand_web/live/main_live.ex:22
+#, elixir-autogen, elixir-format
+msgid "Stop My Hand"
+msgstr "Parame la mano"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:11
+#, elixir-autogen, elixir-format
+msgid "Don't have an account?"
+msgstr "No tienes una cuenta?"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:20
+#, elixir-autogen, elixir-format
+msgid "Email"
+msgstr "Email"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:26
+#, elixir-autogen, elixir-format
+msgid "Forgot your password?"
+msgstr "Olvidaste tu contrasenia?"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:24
+#, elixir-autogen, elixir-format
+msgid "Keep me logged in"
+msgstr "Mantenme loggeado"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:21
+#, elixir-autogen, elixir-format
+msgid "Password"
+msgstr "Contrasenia"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:31
+#, elixir-autogen, elixir-format
+msgid "Sign in"
+msgstr "Ingresar"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:9
+#, elixir-autogen, elixir-format
+msgid "Sign in to account"
+msgstr "Ingresar a mi cuenta"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:13
+#, elixir-autogen, elixir-format
+msgid "Sign up"
+msgstr "Registrarse"
+
+#: lib/stop_my_hand_web/live/user_login_live.ex:15
+#, elixir-autogen, elixir-format
+msgid "for an account now"
+msgstr "por una cuenta ahora"
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Log in"
+msgstr "Ingresar"
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Log out"
+msgstr "Salir"
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Register"
+msgstr "Registrarse"
+
+#: lib/stop_my_hand_web/components/layouts/root.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Settings"
+msgstr "Configuraciones"

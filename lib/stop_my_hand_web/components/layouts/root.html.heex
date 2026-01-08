@@ -23,7 +23,7 @@
             href={~p"/users/settings"}
             class="text-[0.8125rem] leading-6 font-semibold hover:text-accent"
           >
-            Settings
+            <%= gettext("Settings") %>
           </.link>
         </li>
         <li>
@@ -32,7 +32,7 @@
             method="delete"
             class="text-[0.8125rem] leading-6 font-semibold hover:text-accent"
           >
-            Log out
+            <%= gettext("Log out") %>
           </.link>
         </li>
       <% else %>
@@ -41,7 +41,7 @@
             href={~p"/users/register"}
             class="text-[0.8125rem] leading-6 font-semibold hover:text-accent"
           >
-            Register
+            <%= gettext("Register") %>
           </.link>
         </li>
         <li>
@@ -49,7 +49,7 @@
             href={~p"/users/log_in"}
             class="text-[0.8125rem] leading-6 font-semibold hover:text-accent"
           >
-            Log in
+            <%= gettext("Log in") %>
           </.link>
         </li>
       <% end %>

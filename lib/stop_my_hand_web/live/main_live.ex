@@ -19,8 +19,8 @@ defmodule StopMyHandWeb.Main do
     ~H"""
     <div class="grid grid-cols-[4fr_1fr]">
       <div class="flex flex-col items-start gap-4">
-        <h1 class="text-8xl mb-20">STOP MY HAND</h1>
-        <button class="btn btn-blue text-5xl" id="create-match-btn" phx-click={show_modal("create-match-modal")}>Start Match!</button>
+        <h1 class="text-8xl mb-20"><%= gettext("Stop My Hand") %></h1>
+        <button class="btn btn-blue text-5xl" id="create-match-btn" phx-click={show_modal("create-match-modal")}><%= gettext("Start Match") %>!</button>
         <.live_component module={CreateMatch} id="create_match" friends={@friends} current_user={assigns.current_user} />
         <.game_invite game_id={@game_invite.game_id} invitee_handle={@game_invite.invitee_handle} show={@game_invite.show} />
       </div>
@@ -118,7 +118,6 @@ defmodule StopMyHandWeb.Main do
 
   def handle_info(%{event: "game_invite", payload: notification_id}, socket) do
     notification = Repo.get!(StopMyHand.Notification.Notification, notification_id)
-    IO.inspect(notification, label: "Notification")
 
     {:noreply, socket
      |> update(:unread_count, &(&1 + 1))
@@ -203,7 +202,7 @@ defmodule StopMyHandWeb.Main do
     ~H"""
     <div class="w-1/4 h-full">
       <.modal id="game-invite" show={assigns.show}>
-        <h1><strong><%= assigns.invitee_handle %></strong> invites you to a match!</h1>
+        <h1><strong><%= assigns.invitee_handle %></strong> <%= gettext("invites you to") %> <%= gettext("a match") %>!</h1>
         <div>
           <.link id="game_invite" href={~p"/lobby/#{assigns.game_id || ""}"}>Go!</.link>
         </div>

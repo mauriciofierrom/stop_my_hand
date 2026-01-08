@@ -43,6 +43,7 @@ defmodule StopMyHandWeb do
         layouts: [html: StopMyHandWeb.Layouts]
 
       import Plug.Conn
+      use Gettext, backend: StopMyHandWeb.Gettext
       import StopMyHandWeb.Gettext
 
       unquote(verified_routes())
@@ -53,6 +54,7 @@ defmodule StopMyHandWeb do
     quote do
       use Phoenix.LiveView,
         layout: {StopMyHandWeb.Layouts, :app}
+      on_mount StopMyHandWeb.LocaleHook
 
       unquote(html_helpers())
     end
@@ -85,6 +87,7 @@ defmodule StopMyHandWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import StopMyHandWeb.CoreComponents
+      use Gettext, backend: StopMyHandWeb.Gettext
       import StopMyHandWeb.Gettext
 
       # Shortcut for generating JS commands
