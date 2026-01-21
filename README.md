@@ -17,3 +17,10 @@ To run the tests use:
 or to watch changes use
 
 `MIX_ENV=test mix test.watch`
+
+## Generate locales
+
+```
+mix extract
+mix gettext.merge priv/gettext --locale es
+```
