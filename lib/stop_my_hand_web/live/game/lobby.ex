@@ -11,10 +11,10 @@ defmodule StopMyHandWeb.Game.Lobby do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-6 items-center justify-center">
-      <h1 class="text-8xl mb-10">Game Lobby</h1>
-      <h3 class="text-4xl">Waiting for players to join...</h3>
+      <h1 class="text-8xl mb-10"><%= gettext("Game Lobby") %></h1>
+      <h3 class="text-4xl"><%= gettext("Waiting for players to join") %>...</h3>
       <.async_result :let={players} assign={assigns.players}>
-        <:loading>Loading invites...</:loading>
+        <:loading><%= gettext("Loading invites") %>...</:loading>
         <:failed :let={_failure}>There was an error fetching players for this match</:failed>
         <div class="flex flex-col gap-4">
           <%= for {player, status} <- players do %>
@@ -23,7 +23,7 @@ defmodule StopMyHandWeb.Game.Lobby do
         </div>
         <%= if @match.creator_id == assigns.current_user.id do %>
           <.button class="disabled:opacity-50 disabled:cursor-not-allowed text-6xl px-4 py-4" disabled={!can_start_game(@match.creator_id, assigns.current_user.id, @players)} phx-click="play">
-            Play!
+            <%= gettext("Play") %>!
           </.button>
         <% end %>
       </.async_result>
@@ -113,7 +113,7 @@ defmodule StopMyHandWeb.Game.Lobby do
   end
 
   defp player_handle(player, current_user) do
-    if player.user.username == current_user.username, do: "Me", else: player.user.username
+    if player.user.username == current_user.username, do: gettext("Me"), else: player.user.username
   end
 
   defp handle_presence(players, user_id, event) do

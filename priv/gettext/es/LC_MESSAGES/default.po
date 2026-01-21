@@ -19,7 +19,7 @@ msgstr "Acciones"
 #: lib/stop_my_hand_web/live/frienship/search.ex:93
 #, elixir-autogen, elixir-format
 msgid "Invite"
-msgstr "Invitacion"
+msgstr "Invitación"
 
 #: lib/stop_my_hand_web/live/frienship/list.ex:20
 #, elixir-autogen, elixir-format
@@ -27,11 +27,13 @@ msgid "Invites"
 msgstr "Invitaciones"
 
 #: lib/stop_my_hand_web/live/frienship/list.ex:38
+#: lib/stop_my_hand_web/live/game/create_match.ex:20
 #, elixir-autogen, elixir-format
 msgid "Loading friends"
 msgstr "Cargando amigos"
 
 #: lib/stop_my_hand_web/live/frienship/list.ex:16
+#: lib/stop_my_hand_web/live/game/lobby.ex:17
 #, elixir-autogen, elixir-format
 msgid "Loading invites"
 msgstr "Cargando invitaciones"
@@ -72,7 +74,7 @@ msgid "Start Match"
 msgstr "Comenzar Partida"
 
 #: lib/stop_my_hand_web/components/notification.ex:45
-#: lib/stop_my_hand_web/live/main_live.ex:207
+#: lib/stop_my_hand_web/live/main_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "a match"
 msgstr "una partida"
@@ -84,7 +86,7 @@ msgid "close"
 msgstr "cerrar"
 
 #: lib/stop_my_hand_web/components/notification.ex:45
-#: lib/stop_my_hand_web/live/main_live.ex:207
+#: lib/stop_my_hand_web/live/main_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "invites you to"
 msgstr "te invita a "
@@ -97,12 +99,12 @@ msgstr "Amigos"
 #: lib/stop_my_hand_web/live/main_live.ex:22
 #, elixir-autogen, elixir-format
 msgid "Stop My Hand"
-msgstr "Parame la mano"
+msgstr "Párame la mano"
 
 #: lib/stop_my_hand_web/live/user_login_live.ex:11
 #, elixir-autogen, elixir-format
 msgid "Don't have an account?"
-msgstr "No tienes una cuenta?"
+msgstr "¿No tienes una cuenta?"
 
 #: lib/stop_my_hand_web/live/user_login_live.ex:20
 #, elixir-autogen, elixir-format
@@ -112,7 +114,7 @@ msgstr "Email"
 #: lib/stop_my_hand_web/live/user_login_live.ex:26
 #, elixir-autogen, elixir-format
 msgid "Forgot your password?"
-msgstr "Olvidaste tu contrasenia?"
+msgstr "¿Olvidaste tu contraseña?"
 
 #: lib/stop_my_hand_web/live/user_login_live.ex:24
 #, elixir-autogen, elixir-format
@@ -122,7 +124,7 @@ msgstr "Mantenme loggeado"
 #: lib/stop_my_hand_web/live/user_login_live.ex:21
 #, elixir-autogen, elixir-format
 msgid "Password"
-msgstr "Contrasenia"
+msgstr "Contraseña"
 
 #: lib/stop_my_hand_web/live/user_login_live.ex:31
 #, elixir-autogen, elixir-format
@@ -163,3 +165,34 @@ msgstr "Registrarse"
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Configuraciones"
+
+#: lib/stop_my_hand_web/live/game/create_match.ex:18
+#, elixir-autogen, elixir-format
+msgid "Create Match"
+msgstr "Crear partida"
+
+#: lib/stop_my_hand_web/live/game/create_match.ex:33
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "Go"
+msgstr "Ir"
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:14
+#, elixir-autogen, elixir-format
+msgid "Game Lobby"
+msgstr "Sala de espera de juego"
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:26
+#, elixir-autogen, elixir-format
+msgid "Play"
+msgstr "Jugar"
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:15
+#, elixir-autogen, elixir-format
+msgid "Waiting for players to join"
+msgstr "Esperando a que se unan los jugadores"
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:116
+#, elixir-autogen, elixir-format
+msgid "Me"
+msgstr "Yo"

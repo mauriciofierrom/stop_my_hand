@@ -204,7 +204,7 @@ defmodule StopMyHandWeb.Main do
       <.modal id="game-invite" show={assigns.show}>
         <h1><strong><%= assigns.invitee_handle %></strong> <%= gettext("invites you to") %> <%= gettext("a match") %>!</h1>
         <div>
-          <.link id="game_invite" href={~p"/lobby/#{assigns.game_id || ""}"}>Go!</.link>
+          <.link id="game_invite" href={~p"/lobby/#{assigns.game_id || ""}"}><%= gettext("Go") %>!</.link>
         </div>
       </.modal>
     </div>

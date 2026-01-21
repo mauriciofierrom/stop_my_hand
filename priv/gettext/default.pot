@@ -27,11 +27,13 @@ msgid "Invites"
 msgstr ""
 
 #: lib/stop_my_hand_web/live/frienship/list.ex:38
+#: lib/stop_my_hand_web/live/game/create_match.ex:20
 #, elixir-autogen, elixir-format
 msgid "Loading friends"
 msgstr ""
 
 #: lib/stop_my_hand_web/live/frienship/list.ex:16
+#: lib/stop_my_hand_web/live/game/lobby.ex:17
 #, elixir-autogen, elixir-format
 msgid "Loading invites"
 msgstr ""
@@ -72,7 +74,7 @@ msgid "Start Match"
 msgstr ""
 
 #: lib/stop_my_hand_web/components/notification.ex:45
-#: lib/stop_my_hand_web/live/main_live.ex:207
+#: lib/stop_my_hand_web/live/main_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "a match"
 msgstr ""
@@ -84,7 +86,7 @@ msgid "close"
 msgstr ""
 
 #: lib/stop_my_hand_web/components/notification.ex:45
-#: lib/stop_my_hand_web/live/main_live.ex:207
+#: lib/stop_my_hand_web/live/main_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "invites you to"
 msgstr ""
@@ -162,4 +164,35 @@ msgstr ""
 #: lib/stop_my_hand_web/components/layouts/root.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Settings"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/create_match.ex:18
+#, elixir-autogen, elixir-format
+msgid "Create Match"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/create_match.ex:33
+#: lib/stop_my_hand_web/live/main_live.ex:207
+#, elixir-autogen, elixir-format
+msgid "Go"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:14
+#, elixir-autogen, elixir-format
+msgid "Game Lobby"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:26
+#, elixir-autogen, elixir-format
+msgid "Play"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:15
+#, elixir-autogen, elixir-format
+msgid "Waiting for players to join"
+msgstr ""
+
+#: lib/stop_my_hand_web/live/game/lobby.ex:116
+#, elixir-autogen, elixir-format
+msgid "Me"
 msgstr ""

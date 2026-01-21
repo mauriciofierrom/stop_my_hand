@@ -21,6 +21,6 @@ or to watch changes use
 ## Generate locales
 
 ```
-mix extract
+mix gettext.extract
 mix gettext.merge priv/gettext --locale es
 ```

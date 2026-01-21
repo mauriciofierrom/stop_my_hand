@@ -15,9 +15,9 @@ defmodule StopMyHandWeb.Game.CreateMatch do
     ~H"""
     <div class="w-1/4 h-full">
       <.modal id="create-match-modal">
-        <h1 class="text-2xl">Create Match</h1>
+        <h1 class="text-2xl"><%= gettext("Create Match") %></h1>
         <.async_result :let={friends} assign={@friends}>
-          <:loading>Loading Friends...</:loading>
+          <:loading><%= gettext("Loading friends") %>...</:loading>
           <:failed :let={_failure}>There was an error fetching invites</:failed>
           <div class={["flex mt-8 gap-4"]}>
             <%= for {_n, friend} <- friends do %>
@@ -30,7 +30,7 @@ defmodule StopMyHandWeb.Game.CreateMatch do
           <.inputs_for :let={players_form} field={f[:players]} as={:players}>
             <.input type="hidden" field={players_form[:user_id]} />
           </.inputs_for>
-          <.button disabled={Enum.empty?(@changeset.changes[:players])}>Go!</.button>
+          <.button disabled={Enum.empty?(@changeset.changes[:players])}><%= gettext("Go") %>!</.button>
         </.simple_form>
       </.modal>
     </div>
