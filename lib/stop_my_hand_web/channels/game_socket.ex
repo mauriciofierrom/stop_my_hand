@@ -11,6 +11,7 @@ defmodule StopMyHandWeb.GameSocket do
   # pointing to the `StopMyHandWeb.RoomChannel`:
   #
   channel "match:*", StopMyHandWeb.MatchChannel
+  channel "user:*", StopMyHandWeb.UserChannel
   #
   # To create a channel file, use the mix task:
   #
