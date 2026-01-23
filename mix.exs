@@ -50,6 +50,7 @@ defmodule StopMyHand.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
+      {:httpoison, "~> 2.3"},
       {:plug_cowboy, "~> 2.5"},
       {:ex_doc, "~> 0.25.0", only: :dev},
       {:mix_test_watch, "~> 1.4", only: [:dev, :test], runtime: false},
