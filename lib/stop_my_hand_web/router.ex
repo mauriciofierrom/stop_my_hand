@@ -2,6 +2,7 @@ defmodule StopMyHandWeb.Router do
   use StopMyHandWeb, :router
 
   import StopMyHandWeb.UserAuth
+  import StopMyHandWeb.IceServerController
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -87,6 +88,12 @@ defmodule StopMyHandWeb.Router do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end
+  end
+
+  scope "/api", StopMyHandWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    get "/ice-servers", IceServerController, :ice_servers
   end
 
   defp put_user_token(conn, _) do
