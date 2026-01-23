@@ -41,8 +41,8 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
-window.addEventListener("phx:connect_match", ({detail: { match_id, timestamp, first_letter }}) => {
-  channel = createMatch({matchId: match_id, timestamp, first_letter})
+window.addEventListener("phx:connect_match", async ({detail: { match_id, current_user_id }}) => {
+  channel = await createMatch({matchId: match_id, currentUserId: current_user_id})
 })
 
 // WARN: A listener suggested in: https://elixirforum.com/t/how-to-close-modal/54331/7

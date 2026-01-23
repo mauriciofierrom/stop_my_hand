@@ -18,6 +18,15 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
+      <div id="local-player-view" phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
+        <video autoplay class="w-24 h-24 object-cover" id="local-video" />
+        <button id="local-mic" class="absolute bottom-2 left-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
+          <i class="hero-microphone w-4 h-4 text-green-500"></i>
+        </button>
+        <button id="local-camera" class="absolute bottom-2 right-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
+          <i class="hero-video-camera-slash w-4 h-4 text-white"></i>
+        </button>
+      </div>
       <h1 class="text-8xl"><%= gettext("ROUND") %> <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
       <div id="counter" class="shadow-md text-6xl" phx-update="ignore"></div>
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
@@ -32,6 +41,7 @@ defmodule StopMyHandWeb.Game.Match do
         <div class="flex flex-col gap-3">
           <%= for {player_id, data} <- @player_data, player_id != @current_user.id do %>
             <div class="flex gap-3 items-center text-4xl">
+              <.player_view peerId={player_id} />
               <h2><%= data.handle %></h2>
               <div class="font-bold">
                 <%= Map.get(@score, player_id, 0) %>
@@ -72,7 +82,7 @@ defmodule StopMyHandWeb.Game.Match do
     {:ok, socket
      |> assign(final_assigns)
      |> assign(:mode, game_mode(game_status))
-     |> push_event("connect_match", %{match_id: match.id})
+     |> push_event("connect_match", %{match_id: match.id, current_user_id: socket.assigns.current_user.id})
     }
   end
 
@@ -249,6 +259,14 @@ defmodule StopMyHandWeb.Game.Match do
         </div>
       <% end %>
     </div>
+    """
+  end
+
+  defp player_view(assigns) do
+    ~H"""
+      <div class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
+        <video autoplay class="w-24 h-24 object-cover" id={"peer-video-#{@peerId}"} />
+      </div>
     """
   end
 end
