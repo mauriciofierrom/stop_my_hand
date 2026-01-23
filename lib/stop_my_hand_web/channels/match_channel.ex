@@ -18,6 +18,8 @@ defmodule StopMyHandWeb.MatchChannel do
 
     MatchDriver.player_joined(match_id, socket.assigns.user)
 
+    send(self(), :after_join)
+
     {:ok, assign(socket, :match_id, match_id)}
   end
 
@@ -25,6 +27,9 @@ defmodule StopMyHandWeb.MatchChannel do
   def terminate({:shutdown, _reason}, socket) do
     IO.inspect("terminate")
     MatchDriver.player_left(socket.assigns.match_id, socket.assigns.user)
+
+    # WebRTC
+    broadcast_from!(socket, "peer_left", %{user_id: socket.assigns.user})
   end
 
   # Player-triggered end of round (they filled all the fields)
@@ -49,6 +54,12 @@ defmodule StopMyHandWeb.MatchChannel do
 
     broadcast(socket, "player_activity", params_with_player_id)
 
+    {:noreply, socket}
+  end
+
+  def handle_info(:after_join, socket) do
+    # WebRTC
+    broadcast_from!(socket, "peer_joined", %{user_id: socket.assigns.user})
     {:noreply, socket}
   end
 end
