@@ -27,14 +27,13 @@ export class ConferenceManager {
 
   async fetchIceServers() {
     try {
-      // const response = await fetch('/api/ice-servers')
-      // console.log(response)
-      // const iceServers = await response.json()
-      // const stun = iceServers.filter(s => s.urls.includes('stun')).slice(0, 1)
-      // const turn = iceServers.filter(s => s.urls.includes('turn')).slice(0, 2)
+      const response = await fetch('/api/ice-servers')
+      console.log(response)
+      const iceServers = await response.json()
+      const stun = iceServers.filter(s => s.urls.includes('stun')).slice(0, 1)
+      const turn = iceServers.filter(s => s.urls.includes('turn')).slice(0, 2)
 
-      // this.iceServers = [...stun, ...turn]
-      this.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+      this.iceServers = [...stun, ...turn]
 
       console.log(this.iceServers);
     } catch (error) {
