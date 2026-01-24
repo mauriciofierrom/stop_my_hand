@@ -15,13 +15,13 @@ export class ConferenceManager {
 
   async initialize(voiceOnly = false) {
     // Fetch ICE servers from OpenRelay
-    this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
-    // await this.fetchIceServers()
+    //this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+    await this.fetchIceServers();
 
-    console.log("Ice Servers fetched")
+    console.log("Ice Servers fetched");
     // Get local media
     await this.getLocalMedia(voiceOnly);
-    console.log("Local media fetched. Returning")
+    console.log("Local media fetched. Returning");
     return this.localStream;
   }
 
@@ -34,14 +34,14 @@ export class ConferenceManager {
       // const turn = iceServers.filter(s => s.urls.includes('turn')).slice(0, 2)
 
       // this.iceServers = [...stun, ...turn]
-      this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+      this.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
-      console.log(this.iceServers)
+      console.log(this.iceServers);
     } catch (error) {
-      console.error('Failed to fetch ICE servers:', error)
+      console.error("Failed to fetch ICE servers:", error);
 
       // Fallback to public STUN only
-      this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+      this.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
     }
   }
 
@@ -51,17 +51,19 @@ export class ConferenceManager {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
-        sampleRate: 48000
+        sampleRate: 48000,
       },
-      video: voiceOnly ? false : {
-        width: { ideal: 320 },
-        height: { ideal: 320 },
-        frameRate: { ideal: 15, max: 24 }
-      }
+      video: voiceOnly
+        ? false
+        : {
+            width: { ideal: 320 },
+            height: { ideal: 320 },
+            frameRate: { ideal: 15, max: 24 },
+          },
     };
 
     this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    console.log("Got the local stream")
+    console.log("Got the local stream");
 
     this.videoEnabled = !voiceOnly;
     return this.localStream;
@@ -75,21 +77,21 @@ export class ConferenceManager {
     const pc = new RTCPeerConnection({ iceServers: this.iceServers });
 
     // Add local tracks
-    this.localStream.getTracks().forEach(track => {
+    this.localStream.getTracks().forEach((track) => {
       pc.addTrack(track, this.localStream);
     });
 
     // Set encoding parameters for bandwidth control
     setTimeout(() => {
       const senders = pc.getSenders();
-      senders.forEach(sender => {
+      senders.forEach((sender) => {
         if (sender.track) {
           const params = sender.getParameters();
           if (!params.encodings) params.encodings = [{}];
 
-          if (sender.track.kind === 'video') {
+          if (sender.track.kind === "video") {
             params.encodings[0].maxBitrate = 250000; // 250kbps
-          } else if (sender.track.kind === 'audio') {
+          } else if (sender.track.kind === "audio") {
             params.encodings[0].maxBitrate = 128000; // 128kbps
           }
 
@@ -101,9 +103,9 @@ export class ConferenceManager {
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        this.channel.push('webrtc_ice_candidate', {
+        this.channel.push("webrtc_ice_candidate", {
           target: peerId,
-          candidate: event.candidate
+          candidate: event.candidate,
         });
       }
     };
@@ -121,7 +123,7 @@ export class ConferenceManager {
         this.onPeerConnectionChange(peerId, pc.connectionState);
       }
 
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
         this.removePeer(peerId);
       }
     };
@@ -136,9 +138,9 @@ export class ConferenceManager {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    this.channel.push('webrtc_offer', {
+    this.channel.push("webrtc_offer", {
       target: peerId,
-      offer: pc.localDescription
+      offer: pc.localDescription,
     });
   }
 
@@ -150,16 +152,16 @@ export class ConferenceManager {
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    this.channel.push('webrtc_answer', {
+    this.channel.push("webrtc_answer", {
       target: peerId,
-      answer: pc.localDescription
+      answer: pc.localDescription,
     });
   }
 
   async handleAnswer(peerId, answer) {
     const pc = this.peerConnections.get(peerId);
     if (!pc) {
-      console.error('No peer connection found for', peerId);
+      console.error("No peer connection found for", peerId);
       return;
     }
 
@@ -169,7 +171,7 @@ export class ConferenceManager {
   async handleIceCandidate(peerId, candidate) {
     const pc = this.peerConnections.get(peerId);
     if (!pc) {
-      console.error('No peer connection found for', peerId);
+      console.error("No peer connection found for", peerId);
       return;
     }
 
@@ -219,12 +221,12 @@ export class ConferenceManager {
 
   destroy() {
     // Close all peer connections
-    this.peerConnections.forEach(pc => pc.close());
+    this.peerConnections.forEach((pc) => pc.close());
     this.peerConnections.clear();
 
     // Stop local media tracks
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
   }
