@@ -56,7 +56,7 @@ export class ConferenceManager {
       video: voiceOnly
         ? false
         : {
-            width: { ideal: 320 },
+            width: { ideal: 640 },
             frameRate: { ideal: 15, max: 24 },
           },
     };
