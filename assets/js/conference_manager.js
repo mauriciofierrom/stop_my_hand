@@ -57,7 +57,6 @@ export class ConferenceManager {
         ? false
         : {
             width: { ideal: 320 },
-            height: { ideal: 320 },
             frameRate: { ideal: 15, max: 24 },
           },
     };
