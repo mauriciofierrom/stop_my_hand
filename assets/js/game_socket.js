@@ -72,6 +72,7 @@ export async function createMatch({matchId, currentUserId}) {
   let ownVideoElement = document.querySelector('#local-video')
   let localStream = await conferenceManager.initialize()
   ownVideoElement.srcObject = localStream
+  ownVideoElement.muted = true
 
   matchChannel.join()
     .receive("ok", async resp => {
