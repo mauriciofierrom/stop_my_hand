@@ -7,7 +7,7 @@ defmodule StopMyHand.MatchDriver do
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.Game.Score
 
-  @quorum_timeout 15_000
+  @quorum_timeout 45_000
   @game_start_timeout 1_000
   @answers_timeout 10_000
   @review_timeout 10_000
