@@ -69,41 +69,23 @@ export async function createMatch({matchId, currentUserId}) {
     }
   );
 
+  let ownVideoElement = document.querySelector('#local-video')
+  let localStream = await conferenceManager.initialize()
+  ownVideoElement.srcObject = localStream
+  ownVideoElement.muted = true
+
   matchChannel.join()
-    .receive("ok", resp => {
-      console.log("Joined match channel successfully", resp);
-
-      userChannel.join()
-        .receive("ok", resp => {
-          console.log("Joined signal channel successfully", resp);
-
-          conferenceManager.initialize().then(localStream => {
-            let ownVideoElement = document.querySelector('#local-video');
-            ownVideoElement.srcObject = localStream;
-            ownVideoElement.muted = true;
-          });
-        })
-        .receive("error", resp => { console.log("Unable to join signal channel", resp) });
+    .receive("ok", async resp => {
+      console.log("Joined match channel successfully", resp)
     })
-    .receive("error", resp => { console.log("Unable to join match channel", resp) });
-
-  // matchChannel.join()
-  //   .receive("ok", async resp => {
-  //     console.log("Joined match channel successfully", resp)
-  //   })
-  //   .receive("error", resp => { console.log("Unable to join match channel", resp) })
+    .receive("error", resp => { console.log("Unable to join match channel", resp) })
 
 
-  // userChannel.join()
-  //   .receive("ok", async resp => {
-  //     console.log("Joined signal channel successfully", resp)
-  //   })
-  //   .receive("error", resp => { console.log("Unable to join signal channel", resp) })
-
-  // let ownVideoElement = document.querySelector('#local-video')
-  // let localStream = await conferenceManager.initialize()
-  // ownVideoElement.srcObject = localStream
-  // ownVideoElement.muted = true
+  userChannel.join()
+    .receive("ok", async resp => {
+      console.log("Joined signal channel successfully", resp)
+    })
+    .receive("error", resp => { console.log("Unable to join signal channel", resp) })
 
   matchChannel.on("game_start", ({ countdown, letter, round }) => {
     console.log(`GAME START - Countdown: ${countdown}. First letter: ${letter}`)
