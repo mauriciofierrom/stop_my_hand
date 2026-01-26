@@ -22,6 +22,17 @@ game.
 *   **Frontend:** JavaScript, Tailwind CSS, esbuild
 *   **Development Environment:** Nix
 
+## Future Improvements: Soft Distribution (Exploration)
+
+### Horde for Distributed Process Management
+Explore replacing `DynamicSupervisor` with `Horde.DynamicSupervisor` and `Horde.Registry`
+
+### Mnesia for Shared State
+Investigate moving match state from MatchDriver (GenServer) memory into Mnesia to persist state independently of individual processes.
+
+### libclustered for Node Discovery
+Test automatic cluster formation in Kubernetes
+
 ## Getting Started
 
 This project uses [Nix](https://nixos.org/) to provide a consistent development environment.
