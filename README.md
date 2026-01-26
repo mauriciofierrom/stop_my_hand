@@ -12,7 +12,7 @@ game.
 *   **Friendship System:** Users can send and accept friend invitations.
 *   **Real-time Gameplay:** The core of the application is a real-time game built with Phoenix LiveView.
 *   **Online Status:** See when your friends are online.
-*   Video conferencing (in progress)
+*   Video conferencing via WebRTC (in progress)
 
 ## Technical Stack
 
