@@ -45,23 +45,24 @@ export class ConferenceManager {
   }
 
   async getLocalMedia(voiceOnly = false) {
-    let videoConstraints = false;
-
-    if (!voiceOnly) {
-      // Get temporary stream to query capabilities
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoTrack = tempStream.getVideoTracks()[0];
-      const capabilities = videoTrack.getCapabilities();
-
-      // Stop the temp stream
-      tempStream.getTracks().forEach(track => track.stop());
-
-      videoConstraints = {
-        width: { ideal: capabilities.width.min },
-        height: { ideal: capabilities.height.min },
+    const constraints = {
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 48000,
+      },
+      video: voiceOnly ? false : {
+        width: { ideal: 320, max: 640 },
+        height: { ideal: 240, max: 480 },
         frameRate: { ideal: 15, max: 24 },
-      };
-    }
+      },
+    };
+
+    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    this.videoEnabled = !voiceOnly;
+    return this.localStream;
+  }
 
     const constraints = {
       audio: {

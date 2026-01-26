@@ -58,7 +58,6 @@ export async function createMatch({matchId, currentUserId}) {
     currentUserId,
     (peerId, track, stream) => {
       console.log("On remote track!")
-      // Find or create v"local-video"ideo element for this peer
       let videoElement = document.querySelector(`#peer-video-${peerId}`)
 
       // Set the stream as source
@@ -71,8 +70,8 @@ export async function createMatch({matchId, currentUserId}) {
 
   let ownVideoElement = document.querySelector('#local-video')
   let localStream = await conferenceManager.initialize()
-  ownVideoElement.srcObject = localStream
   ownVideoElement.muted = true
+  ownVideoElement.srcObject = localStream
 
   matchChannel.join()
     .receive("ok", async resp => {
