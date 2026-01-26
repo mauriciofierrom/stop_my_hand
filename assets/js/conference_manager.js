@@ -45,37 +45,24 @@ export class ConferenceManager {
   }
 
   async getLocalMedia(voiceOnly = false) {
-    const constraints = {
+    this.localStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
         sampleRate: 48000,
       },
-      video: voiceOnly ? false : {
-        width: { ideal: 320, max: 640 },
-        height: { ideal: 240, max: 480 },
-        frameRate: { ideal: 15, max: 24 },
-      },
-    };
+      video: true
+    });
 
-    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    this.videoEnabled = !voiceOnly;
-    return this.localStream;
-  }
+    const videoTrack = this.localStream.getVideoTracks()[0];
+    const capabilities = videoTrack.getCapabilities();
+    await videoTrack.applyConstraints({
+      width: { ideal: capabilities.width.min },
+      height: { ideal: capabilities.height.min },
+      frameRate: { ideal: 15 }
+    });
 
-    const constraints = {
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 48000,
-      },
-      video: videoConstraints,
-    };
-
-    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    console.log("Got the local stream");
     this.videoEnabled = !voiceOnly;
     return this.localStream;
   }
