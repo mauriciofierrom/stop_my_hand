@@ -15,7 +15,7 @@ export class ConferenceManager {
 
   async initialize(voiceOnly = false) {
     // Fetch ICE servers from OpenRelay
-    //this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+    // this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
     await this.fetchIceServers();
 
     console.log("Ice Servers fetched");
@@ -45,26 +45,30 @@ export class ConferenceManager {
   }
 
   async getLocalMedia(voiceOnly = false) {
-    this.localStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 48000,
-      },
-      video: true
-    });
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+        },
+        video: true
+      });
 
-    const videoTrack = this.localStream.getVideoTracks()[0];
-    const capabilities = videoTrack.getCapabilities();
-    await videoTrack.applyConstraints({
-      width: { ideal: capabilities.width.min },
-      height: { ideal: capabilities.height.min },
-      frameRate: { ideal: 15 }
-    });
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      const capabilities = videoTrack.getCapabilities();
+      await videoTrack.applyConstraints({
+        width: { ideal: capabilities.width.min },
+        height: { ideal: capabilities.height.min },
+        frameRate: { ideal: 15 }
+      });
 
-    this.videoEnabled = !voiceOnly;
-    return this.localStream;
+      this.videoEnabled = !voiceOnly;
+      return this.localStream;
+    } catch(error) {
+      console.error("getUserMedia failed:", error.name, error.message)
+    }
   }
 
   createPeerConnection(peerId) {
@@ -117,11 +121,13 @@ export class ConferenceManager {
 
     // Monitor connection state
     pc.onconnectionstatechange = () => {
+      console.log(pc.connectionState)
       if (this.onPeerConnectionChange) {
         this.onPeerConnectionChange(peerId, pc.connectionState);
       }
 
       if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+        console.log("removing peer")
         this.removePeer(peerId);
       }
     };
