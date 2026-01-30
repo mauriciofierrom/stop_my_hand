@@ -264,7 +264,7 @@ defmodule StopMyHandWeb.Game.Match do
 
   defp player_view(assigns) do
     ~H"""
-      <div class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
+      <div id={"peer-video-container-#{@peerId}"} phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
         <video autoplay class="w-24 h-24 object-cover" id={"peer-video-#{@peerId}"} />
       </div>
     """
