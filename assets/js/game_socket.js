@@ -57,11 +57,13 @@ export async function createMatch({matchId, currentUserId}) {
     userChannel,
     currentUserId,
     (peerId, track, stream) => {
-      console.log("On remote track!")
-      let videoElement = document.querySelector(`#peer-video-${peerId}`)
+      console.log(`On remote track peer id: ${peerId}`)
 
-      // Set the stream as source
-      videoElement.srcObject = stream
+      let videoElement = document.querySelector(`#peer-video-${peerId}`)
+      console.log("Video element", videoElement)
+      if (videoElement && !videoElement.srcObject) {
+        videoElement.srcObject = stream
+      }
     },
     (peerId, state) => {
       console.log(`Peer ${peerId} connection state: ${state}`)
