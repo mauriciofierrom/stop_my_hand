@@ -51,13 +51,7 @@ export class ConferenceManager {
   async getLocalMedia(voiceOnly = false) {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleSize: 16,
-          channelCount: 1,
-        },
+        audio: true,
         video: voiceOnly
           ? false
           : {
