@@ -52,30 +52,21 @@ export class ConferenceManager {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: true },
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleSize: 16,
+          channelCount: 1,
         },
         video: voiceOnly
           ? false
           : {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 15 },
+              width: { min: 640, ideal: 1280 },
+              height: { min: 480, ideal: 720 },
+              aspectRatio: { ideal: 1.7777777778 },
+              frameRate: { ideal: 30 },
             },
       });
-
-      if (!voiceOnly) {
-        const videoTrack = this.localStream.getVideoTracks()[0];
-        const capabilities = videoTrack.getCapabilities?.();
-        if (capabilities?.width) {
-          await videoTrack.applyConstraints({
-            width: { ideal: capabilities.width.min },
-            height: { ideal: capabilities.height.min },
-            frameRate: { ideal: 15 },
-          });
-        }
-      }
 
       this.videoEnabled = !voiceOnly;
       return this.localStream;
