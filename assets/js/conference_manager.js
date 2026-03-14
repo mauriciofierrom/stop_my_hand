@@ -15,8 +15,8 @@ export class ConferenceManager {
 
   async initialize(voiceOnly = false) {
     // Fetch ICE servers from OpenRelay
-    // this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
-    await this.fetchIceServers();
+    this.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+    //await this.fetchIceServers();
 
     console.log("Ice Servers fetched");
     // Get local media
@@ -27,13 +27,17 @@ export class ConferenceManager {
 
   async fetchIceServers() {
     try {
-      const response = await fetch('/api/ice-servers')
-      console.log(response)
-      const iceServers = await response.json()
-      const stun = iceServers.filter(s => s.urls.includes('stun')).slice(0, 1)
-      const turn = iceServers.filter(s => s.urls.includes('turn')).slice(0, 2)
+      const response = await fetch("/api/ice-servers");
+      console.log(response);
+      const iceServers = await response.json();
+      const stun = iceServers
+        .filter((s) => s.urls.includes("stun"))
+        .slice(0, 1);
+      const turn = iceServers
+        .filter((s) => s.urls.includes("turn"))
+        .slice(0, 2);
 
-      this.iceServers = [...stun, ...turn]
+      this.iceServers = [...stun, ...turn];
 
       console.log(this.iceServers);
     } catch (error) {
@@ -48,26 +52,35 @@ export class ConferenceManager {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
         },
-        video: true
+        video: voiceOnly
+          ? false
+          : {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 15 },
+            },
       });
 
-      const videoTrack = this.localStream.getVideoTracks()[0];
-      const capabilities = videoTrack.getCapabilities();
-      await videoTrack.applyConstraints({
-        width: { ideal: capabilities.width.min },
-        height: { ideal: capabilities.height.min },
-        frameRate: { ideal: 15 }
-      });
+      if (!voiceOnly) {
+        const videoTrack = this.localStream.getVideoTracks()[0];
+        const capabilities = videoTrack.getCapabilities?.();
+        if (capabilities?.width) {
+          await videoTrack.applyConstraints({
+            width: { ideal: capabilities.width.min },
+            height: { ideal: capabilities.height.min },
+            frameRate: { ideal: 15 },
+          });
+        }
+      }
 
       this.videoEnabled = !voiceOnly;
       return this.localStream;
-    } catch(error) {
-      console.error("getUserMedia failed:", error.name, error.message)
+    } catch (error) {
+      console.error("getUserMedia failed:", error.name, error.message);
     }
   }
 
@@ -121,13 +134,13 @@ export class ConferenceManager {
 
     // Monitor connection state
     pc.onconnectionstatechange = () => {
-      console.log(pc.connectionState)
+      console.log(pc.connectionState);
       if (this.onPeerConnectionChange) {
         this.onPeerConnectionChange(peerId, pc.connectionState);
       }
 
       if (pc.connectionState === "failed" || pc.connectionState === "closed") {
-        console.log("removing peer")
+        console.log("removing peer");
         this.removePeer(peerId);
       }
     };
