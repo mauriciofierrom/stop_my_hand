@@ -40,7 +40,7 @@ defmodule StopMyHand.Game do
     Repo.get_by(Player, match_id: match.id, user_id: match.creator_id)
   end
 
-  defp insert_match(attrs) do
+  def insert_match(attrs) do
     %Match{}
     |> Match.changeset(attrs)
     |> Repo.insert()

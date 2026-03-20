@@ -15,8 +15,8 @@ defmodule StopMyHand.Notification.Notification do
   @doc false
   def changeset(notification, attrs) do
     notification
-    |> cast(attrs, [:title, :status, :type, :metadata])
-    |> validate_required([:title, :status, :type, :metadata])
+    |> cast(attrs, [:title, :status, :type, :metadata, :user_id, :inserted_at, :updated_at])
+    |> validate_required([:title, :status, :type, :metadata, :user_id])
   end
 
   def mark_read_changeset(notification, attrs) do

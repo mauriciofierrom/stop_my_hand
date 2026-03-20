@@ -85,7 +85,6 @@ defmodule StopMyHandWeb.LobbyTest do
       assert (length online) == 1
     end
 
-    @tag :focus
     test "when no invited player is online the Start button is disabled", %{conn: conn} do
       match = create_match()
       {:ok, lv, _html} = live(log_in_user(conn, match.creator), "/lobby/#{match.id}")
@@ -99,7 +98,6 @@ defmodule StopMyHandWeb.LobbyTest do
       assert Floki.find(result, "button[disabled]") != []
     end
 
-    @tag :focus
     test "when there's at least one invited player online the Start button is enabled", %{conn: conn} do
       match = create_match()
       [first_player|_rest] = match.players

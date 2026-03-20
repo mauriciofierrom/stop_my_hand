@@ -1,4 +1,4 @@
-defmodule StopMyHandWeb.NotificationLive do
+defmodule StopMyHandWeb.Notification do
   use StopMyHandWeb, :live_view
 
   alias StopMyHandWeb.Dropdown

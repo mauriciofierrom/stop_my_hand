@@ -18,4 +18,12 @@ defmodule StopMyHand.GameFixtures do
 
     match |> Repo.preload([:creator, players: [:user]])
   end
+
+  def create_empty_match() do
+    creator = user_fixture()
+
+    {:ok, match} = Game.insert_match(%{creator_id: creator.id, players: []})
+
+    match
+  end
 end

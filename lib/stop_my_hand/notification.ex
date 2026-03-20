@@ -62,14 +62,14 @@ defmodule StopMyHand.Notification do
       nil -> {:error, "Notification not found"}
       notification ->
         notification
-        |> Notification.changeset(%{status: "read"})
+        |> Notification.mark_read_changeset(%{status: "read"})
         |> Repo.update()
     end
   end
 
-  defp insert_notification(attrs) do
+  def insert_notification(attrs) do
     %Notification{}
-    |> Notification.mark_read_changeset(attrs)
+    |> Notification.changeset(attrs)
     |> Repo.insert()
   end
 end

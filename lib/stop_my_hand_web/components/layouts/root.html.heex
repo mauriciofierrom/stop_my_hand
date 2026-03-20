@@ -26,7 +26,7 @@
             <%= gettext("Settings") %>
           </.link>
         </li>
-        <%= live_render(@conn, StopMyHandWeb.NotificationLive, session: %{"user_id" => @current_user.id}, container: {:li, []}, layout: false) %>
+        <%= live_render(@conn, StopMyHandWeb.Notification, session: %{"user_id" => @current_user.id}, container: {:li, []}, layout: false) %>
         <li>
           <.link
             href={~p"/users/log_out"}
