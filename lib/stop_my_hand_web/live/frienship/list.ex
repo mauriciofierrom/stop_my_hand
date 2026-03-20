@@ -40,7 +40,7 @@ defmodule StopMyHandWeb.Friendship.List do
             <div class={[]}>
               <%= if !Enum.empty?(friends) do %>
                 <%= for {_n, friend} <- friends do %>
-                  <.friend_item friend={friend}/>
+                  <.friend_item friend={friend} id={"friend-#{friend.user.id}"}/>
                 <% end %>
               <% else %>
                 <%= gettext("No friends") %>. <.link href={~p"/start"}><%= gettext("Search for friends") %>!</.link>
@@ -79,7 +79,7 @@ defmodule StopMyHandWeb.Friendship.List do
           <:button class="ml-auto">
             ...
           </:button>
-          <.dropdown_item>
+          <.dropdown_item id={@id}>
             <span class="text-red-800" id={ "remove-#{assigns.friend.user.id}"} phx-hook="ConfirmFriendRemoval" data-userid={ assigns.friend.user.id }>Delete</span>
           </.dropdown_item>
         </.live_component>

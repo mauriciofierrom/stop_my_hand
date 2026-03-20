@@ -591,8 +591,10 @@ defmodule StopMyHandWeb.CoreComponents do
   slot :inner_block, require: true
 
   def dropdown_item(assigns) do
+    outer_id = assigns.id
+
     ~H"""
-    <div class="block px-4 py-2 text-sm text-gray-700 cursor-pointer" role="menu-item" tab-index="-1">
+    <div id={outer_id} class="block px-4 py-2 text-sm text-gray-700 cursor-pointer" role="menu-item" tab-index="-1">
       <%= render_slot(@inner_block) %>
     </div>
     """

@@ -69,10 +69,10 @@ Hooks.MatchHook = {
 
 Hooks.NotificationHover = {
   mounted() {
-    console.log("NotificationHover mounted")
     this.el.addEventListener("mouseenter", (e) => {
-      console.log(`The notification id: ${this.el.dataset.notificationId}`)
-      this.pushEvent("notification_read", { id: this.el.dataset.notificationId })
+      if(!(this.el.dataset.read === "read")) {
+        this.pushEvent("notification_read", { id: this.el.dataset.notificationId })
+      }
     })
   }
 }
