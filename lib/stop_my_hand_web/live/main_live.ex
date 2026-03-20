@@ -192,7 +192,7 @@ defmodule StopMyHandWeb.Main do
       {:ok, _} ->
           %AsyncResult{result: friends} = socket.assigns.friends
           {:noreply, socket
-          |> assign_async(:friends, fn -> {:ok, %{friends: Enum.filter(friends, fn {id, _} -> id == userid end)}} end)
+          |> assign_async(:friends, fn -> {:ok, %{friends: Enum.filter(friends, fn {id, _} -> id != userid end)}} end)
           |> put_flash(:info, "Friend removed")}
       _ -> {:noreply, put_flash(socket, :error, "Error removing friend")}
     end
