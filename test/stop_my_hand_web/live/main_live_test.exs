@@ -43,7 +43,7 @@ defmodule StopMyHandWeb.MainLiveTest do
       assert result =~ "No friends."
 
       lv
-      |> element(~s|main a:fl-contains("Search for friends!")|)
+      |> element("main a", "Search for friends!")
       |> render_click()
 
       assert_redirect lv, "/start"

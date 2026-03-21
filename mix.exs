@@ -39,8 +39,8 @@ defmodule StopMyHand.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.20.17"},
-      {:floki, ">= 0.30.0", only: :test},
+      {:phoenix_live_view, "~> 1.1"},
+      {:floki, "<= 0.36.2", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
@@ -54,6 +54,7 @@ defmodule StopMyHand.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:ex_doc, "~> 0.25.0", only: :dev},
       {:mix_test_watch, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
