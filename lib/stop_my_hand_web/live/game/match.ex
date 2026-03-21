@@ -15,7 +15,6 @@ defmodule StopMyHandWeb.Game.Match do
   import StopMyHandWeb.Game.Match.PlayerView
 
   @categories [:name, :last_name, :city, :color, :animal, :thing]
-  @ordered_cats Enum.sort_by(Enum.with_index(@categories), fn {_, idx} -> idx end)
 
   def render(assigns) do
     ~H"""
@@ -130,19 +129,6 @@ defmodule StopMyHandWeb.Game.Match do
     updated_player_data = MatchDriver.get_player_data(socket.assigns.match.id)
 
     {:noreply, assign(socket, :player_data, updated_player_data)}
-  end
-
-  defp convert_payload(answers) do
-    Map.new(answers, fn {player_id_str, categories} ->
-      {
-        String.to_integer(player_id_str),
-        Map.new(categories, fn {cat_str, value} ->
-          cat_atom = String.to_existing_atom(String.replace(cat_str, "-", "_"))
-          idx = Enum.find_index(@categories, &(&1 == cat_atom))
-          {{cat_atom, idx}, value}
-        end)
-      }
-    end)
   end
 
   defp default_player_activity(player_ids, categories) do
