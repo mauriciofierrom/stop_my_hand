@@ -5,11 +5,7 @@ defmodule StopMyHandWeb.Game.Match do
   use StopMyHandWeb, :live_view
 
   alias StopMyHand.Game
-  alias StopMyHand.Game.Player
   alias StopMyHand.Game.Round
-  alias StopMyHand.Game.Score
-  alias StopMyHandWeb.Endpoint
-  alias StopMyHandWeb.Game.Match.PlayerActivity
   alias StopMyHand.MatchDriver
   import StopMyHandWeb.Game.Match.Round
   import StopMyHandWeb.Game.Match.PlayerView
@@ -48,7 +44,6 @@ defmodule StopMyHandWeb.Game.Match do
   end
 
   def mount(params, _session, socket) do
-    IO.inspect("mounting for some reason")
     match = Game.get_match(params["match_id"])
 
     base_assigns = fn player_data ->
@@ -139,7 +134,6 @@ defmodule StopMyHandWeb.Game.Match do
 
   defp initial_match_state(match, player_data) do
     %{
-      match: match,
       round: %Round{},
       round_number: 1,
       current_category: :name,
