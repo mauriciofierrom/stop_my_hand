@@ -11,6 +11,8 @@ defmodule StopMyHandWeb.Game.Match do
   alias StopMyHandWeb.Endpoint
   alias StopMyHandWeb.Game.Match.PlayerActivity
   alias StopMyHand.MatchDriver
+  import StopMyHandWeb.Game.Match.Round
+  import StopMyHandWeb.Game.Match.PlayerView
 
   @categories [:name, :last_name, :city, :color, :animal, :thing]
   @ordered_cats Enum.sort_by(Enum.with_index(@categories), fn {_, idx} -> idx end)
@@ -18,40 +20,27 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
-      <div id="local-player-view" phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
-        <video autoplay class="w-24 h-24 object-cover" id="local-video" />
-        <button id="local-mic" class="absolute bottom-2 left-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
-          <i class="hero-microphone w-4 h-4 text-green-500"></i>
-        </button>
-        <button id="local-camera" class="absolute bottom-2 right-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
-          <i class="hero-video-camera-slash w-4 h-4 text-white"></i>
-        </button>
-      </div>
-      <h1 class="text-8xl"><%= gettext("ROUND") %> <%= @round_number %> - <%= Map.get(@score, @current_user.id, 0) %></h1>
-      <div id="counter" class="shadow-md text-6xl" phx-update="ignore"></div>
+      <.player_view source={:local} peer_id={@current_user.id} />
+      <.round_info round_number={@round_number} score={Map.get(@score, @current_user.id, 0)} current_letter={Map.get(assigns, :current_letter, "")} />
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
-        <div id="letter" class="text-8xl text-accent" phx-update="ignore"><%= Map.get(assigns, :current_letter, "") %></div>
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
           <div class="flex gap-3">
-            <%= for category <- @categories do %>
-              <.scored_field form={f} category={category} score={get_in(@player_data, [@current_user.id, :answers, category, :result])} />
-            <% end %>
+            <.scored_field :for={category <- @categories} form={f} category={category} score={get_in(@player_data, [@current_user.id, :answers, category, :result])} />
           </div>
         </.simple_form>
         <div class="flex flex-col gap-3">
           <%= for {player_id, data} <- @player_data, player_id != @current_user.id do %>
-            <div class="flex gap-3 items-center text-4xl">
-              <.player_view peerId={player_id} />
-              <h2><%= data.handle %></h2>
-              <div class="font-bold">
-                <%= Map.get(@score, player_id, 0) %>
+            <div class="flex flex-col gap-3">
+              <div class="flex gap-3 items-center text-4xl">
+                <.player_view source={:remote} peer_id={player_id} />
+                <h2>{data.handle}</h2>
+                <div class="font-bold">
+                  {Map.get(@score, player_id, 0)}
+                </div>
               </div>
+              <.player_activity :if={!@reviewing} player_activity={@player_activity} player_id={player_id} />
+              <.player_review :if={@reviewing} player_id={player_id} player_data={data} categories={@categories} current_user_id={@current_user.id} current_category={@current_category} />
             </div>
-            <%= unless @reviewing do %>
-              <.player_activity player_activity={@player_activity} categories={@categories} player_id={player_id} />
-            <% else %>
-              <.player_review player_id={player_id} player_data={data} categories={@categories} current_user_id={@current_user.id} current_category={@current_category} />
-            <% end %>
           <% end %>
         </div>
       </div>
@@ -90,7 +79,6 @@ defmodule StopMyHandWeb.Game.Match do
     player_id = String.to_integer(raw_player_id)
     current_user_id = socket.assigns.current_user.id
 
-    # Update the driver's state
     {:ok, updated_player_data} =
       MatchDriver.report_review(socket.assigns.match.id, %{
             reviewer_id: current_user_id,
@@ -125,7 +113,6 @@ defmodule StopMyHandWeb.Game.Match do
   def handle_event("reset", _params, socket) do
     match_id = socket.assigns.match.id
 
-    # The server knows what's what and we just ask, missing intention
     updated_player_data = MatchDriver.get_player_data(match_id)
     new_score = MatchDriver.get_player_scores(match_id)
 
@@ -158,22 +145,6 @@ defmodule StopMyHandWeb.Game.Match do
     end)
   end
 
-  defp answer_class(review) do
-    case review do
-      :accepted -> "text-green-600"
-      :rejected -> "text-red-600"
-      :none -> ""
-    end
-  end
-
-  defp points_class(result) do
-    case result do
-      :accepted -> "text-green-600"
-      :rejected -> "text-orange-600"
-      :empty -> "text-red-600"
-    end
-  end
-
   defp default_player_activity(player_ids, categories) do
     for player_id <- player_ids, into: %{} do
       {player_id, (for category <- categories, into: %{}, do: {category, "---"})}
@@ -197,76 +168,11 @@ defmodule StopMyHandWeb.Game.Match do
   defp scored_field(assigns) do
     ~H"""
     <div class="flex flex-col items-center justify-center">
-      <%= if assigns.score do %>
-        <.score result={@score} />
-      <% end %>
+      <.score :if={assigns.score} result={@score} />
       <div>
         <.input field={@form[@category]} label={translate_category(@category)} data-category={Atom.to_string(@category)}/>
       </div>
     </div>
-    """
-  end
-
-  defp score(assigns) do
-    ~H"""
-      <div class={[points_class(@result.reason), "font-bold"]}>
-        <%= @result.points %>
-      </div>
-    """
-  end
-
-  def player_activity(assigns) do
-    ~H"""
-      <div class="flex gap-2">
-        <%= for {category, activity} <- @player_activity[@player_id] do %>
-          <div class="flex gap-2 items-center justify-center">
-            <span class="font-bold text-xl"><%= translate_category(category) %>:</span>
-            <div class="flex flex-col items-center justify-center">
-              <%= activity %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    """
-  end
-
-  defp player_review(assigns) do
-    ~H"""
-    <div class="flex gap-2">
-      <%= for category <- @categories do %>
-        <div class="flex gap-2 items-center justify-center">
-          <span class="font-bold text-xl"><%= translate_category(category) %>:</span>
-          <div class="flex flex-col items-center justify-center">
-            <%= if get_in(@player_data, [:answers, category, :result]) do %>
-              <.score result={get_in(@player_data, [:answers, category, :result])} />
-            <% end %>
-            <%= if @player_data.answers[category].value == "" do %>
-              <span>--</span>
-            <% else %>
-              <div class={answer_class(get_in(@player_data.answers, [category, :reviews, @current_user_id]))}>
-                <%= @player_data.answers[category].value %>
-              </div>
-            <% end %>
-          </div>
-          <%= if @current_category == category && @player_data.answers[category].value != "" do %>
-            <.button class={if @player_data.answers[category].reviews[@current_user_id] == :accepted, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="accepted">
-              <.icon name="hero-check" />
-            </.button>
-            <.button class={if @player_data.answers[category].reviews[@current_user_id] == :rejected, do: "bg-accent", else: "bg-secondary"} phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="rejected">
-              <.icon name="hero-x-mark" />
-            </.button>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
-
-  defp player_view(assigns) do
-    ~H"""
-      <div id={"peer-video-container-#{@peerId}"} phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
-        <video autoplay class="w-24 h-24 object-cover" id={"peer-video-#{@peerId}"} />
-      </div>
     """
   end
 end
