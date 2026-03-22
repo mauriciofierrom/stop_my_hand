@@ -68,7 +68,7 @@ defmodule StopMyHandWeb.Game.Lobby do
     case DynamicSupervisor
       .start_child(StopMyHand.DynamicSupervisor,
         {StopMyHand.MatchDriver,
-         %{players: full_players, match_id: socket.assigns.match.id}}) do
+         %{players: full_players, match_id: socket.assigns.match.id, scheduler: StopMyHand.Scheduler.Default}}) do
       {:ok, _pid} ->
         Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
       {:error, reason} -> IO.inspect(reason, label: "Match Driver")

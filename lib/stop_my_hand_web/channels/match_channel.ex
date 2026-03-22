@@ -10,7 +10,7 @@ defmodule StopMyHandWeb.MatchChannel do
   def join("match:"<>raw_match_id, _payload, socket) do
     match_id = String.to_integer(raw_match_id)
 
-    MatchDriver.player_joined(match_id, socket.assigns.user)
+    MatchDriver.add_player(match_id, socket.assigns.user)
 
     send(self(), :after_join)
 
@@ -25,7 +25,7 @@ defmodule StopMyHandWeb.MatchChannel do
   - To the `WebRTC` signaling
   """
   def terminate({:shutdown, _reason}, socket) do
-    MatchDriver.player_left(socket.assigns.match_id, socket.assigns.user)
+    MatchDriver.remove_player(socket.assigns.match_id, socket.assigns.user)
 
     # WebRTC
     broadcast_from!(socket, "peer_left", %{user_id: socket.assigns.user})
@@ -46,17 +46,17 @@ defmodule StopMyHandWeb.MatchChannel do
     can show it in their player view.
   """
   def handle_in("player_finished", _params, socket) do
-    MatchDriver.round_finished(socket.assigns.match_id)
+    MatchDriver.finish_round(socket.assigns.match_id)
     {:noreply, socket}
   end
 
   def handle_in("round_finished", _params, socket) do
-    MatchDriver.round_finished(socket.assigns.match_id)
+    MatchDriver.finish_round(socket.assigns.match_id)
     {:noreply, socket}
   end
 
   def handle_in("report_answers", answers, socket) do
-    MatchDriver.player_answers(socket.assigns.match_id, socket.assigns.user, answers)
+    MatchDriver.report_player_answers(socket.assigns.match_id, socket.assigns.user, answers)
     {:noreply, socket}
   end
 

@@ -1,30 +1,29 @@
 defmodule StopMyHandWeb.MatchChannelTest do
   use StopMyHandWeb.ChannelCase
 
+  alias StopMyHand.MatchDriver
+  import StopMyHand.GameFixtures
+
   setup do
+    match = create_match()
+
+    players = [match.creator|(for player <- match.players, do: player.user)]
+    {:ok, pid}  = MatchDriver.start_link(
+      %{players: players, match_id: match.id, scheduler: StopMyHand.Scheduler.Test}
+    )
+
     {:ok, _, socket} =
-      StopMyHandWeb.UserSocket
-      |> socket("user_id", %{some: :assign})
-      |> subscribe_and_join(StopMyHandWeb.MatchChannel, "match:lobby")
+      StopMyHandWeb.GameSocket
+      |> socket(%{user: "1"})
+      |> subscribe_and_join(StopMyHandWeb.MatchChannel, "match:#{match.id}")
 
-    %{socket: socket}
+    %{socket: socket, match: match}
   end
 
-  @tag :skip
-  test "ping replies with status ok", %{socket: socket} do
-    ref = push(socket, "ping", %{"hello" => "there"})
-    assert_reply ref, :ok, %{"hello" => "there"}
-  end
+  test "player activity is broadcasted to the other players", %{socket: socket} do
+    payload = %{category: "name", letter: "A", size: 5}
+    push(socket, "player_activity", payload)
 
-  @tag :skip
-  test "shout broadcasts to match:lobby", %{socket: socket} do
-    push(socket, "shout", %{"hello" => "all"})
-    assert_broadcast "shout", %{"hello" => "all"}
-  end
-
-  @tag :skip
-  test "broadcasts are pushed to the client", %{socket: socket} do
-    broadcast_from!(socket, "broadcast", %{"some" => "data"})
-    assert_push "broadcast", %{"some" => "data"}
+    assert_broadcast "player_activity", %{"category" =>  "name", "letter" => "A", "size" => 5}
   end
 end
