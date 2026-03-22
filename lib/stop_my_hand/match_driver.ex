@@ -17,14 +17,20 @@ defmodule StopMyHand.MatchDriver do
   @round_timeout (@countdown * 1_000) + 180_000
   @categories [:name, :last_name, :city, :color, :animal, :thing]
 
-  def start_link(%{players: players, match_id: match_id}) do
-    GenServer.start_link(__MODULE__, {players, match_id}, name: via_tuple(match_id))
+  @doc """
+  Initialize the `MatchDriver` with the `match` id and the `Scheduler` to use.
+
+  Scheduler is used to determine how the genserver will handle timeouts for testing purposes.
+  The default implementation calls `send_after/3`.
+  """
+  def start_link(%{players: players, match_id: match_id, scheduler: scheduler}) do
+    GenServer.start_link(__MODULE__, {players, match_id, scheduler}, name: via_tuple(match_id))
   end
 
-  def init({expected_players, match_id}) do
+  def init({expected_players, match_id, scheduler}) do
     {starting_letter, alphabet} = pick_letter_from(make_alphabet())
 
-    Process.send_after(self(), :no_quorum, @quorum_timeout)
+    scheduler.send_after(self(), :no_quorum, @quorum_timeout)
     player_data = Score.default_player_data(expected_players)
 
     initial_state = %{
@@ -40,63 +46,109 @@ defmodule StopMyHand.MatchDriver do
       cat_index: 0,
       players_answered: [],
       player_data: player_data,
+      scheduler: scheduler,
       score: (for expected_player <- expected_players, into: %{}, do: {expected_player.id, 0})
     }
 
     {:ok, initial_state}
   end
 
-  def player_joined(match_id, player_id) do
+  @doc """
+  When full quorum is reached the match starts immediately.
+
+  If at least two players have joined we start a timeout to begin the match,
+  any player joining during that window is added to `joined`. Once the match
+  is in any other state, joining players are added to `pending` to be moved
+  to `joined` at the start of the next round.
+  """
+  def add_player(match_id, player_id) do
     GenServer.call(via_tuple(match_id), {:add_player, player_id})
   end
 
-  def player_left(match_id, player_id) do
+  @doc """
+  During `:init` the removal is ignored. If removing the player would leave one
+  or fewer players in `joined`, the match is terminated and a `game_finished`
+  broadcast is sent. Otherwise the player is simply removed from `joined`.
+  """
+  def remove_player(match_id, player_id) do
     GenServer.call(via_tuple(match_id), {:remove_player, player_id})
   end
 
-  def round_finished(match_id) do
+  @doc """
+  Broadcasts `round_finished` and starts the answers collection timeout, transitioning
+  the game to `:awaiting_answers`.
+  """
+  def finish_round(match_id) do
     GenServer.call(via_tuple(match_id), :round_finished)
   end
 
-  def player_answers(match_id, player_id, answers) do
+  @doc """
+  Stores the player's answers in `player_data`. Once all joined players have answered,
+  broadcasts `in_review` for the first category and starts the review timeout.
+  """
+  def report_player_answers(match_id, player_id, answers) do
     GenServer.call(via_tuple(match_id), {:player_answers, player_id, answers})
   end
 
+  @doc """
+  Records the reviewer's verdict for the current category on the target player's
+  data. Any non-rejected result is coerced to `:accepted` to create scoring urgency.
+  """
   def report_review(match_id, %{reviewer_id: reviewer_id, player_id: player_id, result: result}) do
     GenServer.call(via_tuple(match_id), {:player_review, reviewer_id, player_id, result})
   end
 
+  @doc """
+  Returns the full `player_data` map.
+  """
   def get_player_data(match_id) do
     GenServer.call(via_tuple(match_id), :get_player_data)
   end
 
+  @doc """
+  Returns the current match score for a single player.
+  """
   def get_player_score(match_id, player_id) do
     GenServer.call(via_tuple(match_id), {:get_player_score, player_id})
   end
 
+  @doc """
+  Returns the full scores map for all players.
+  """
   def get_player_scores(match_id) do
     GenServer.call(via_tuple(match_id), :get_player_scores)
   end
 
+  @doc """
+  Returns `{:normal, player_data}` during `:init`, or
+  `{:ongoing, match_state}` with scores, current category, current letter,
+  player data, round number, and game status otherwise. The Match LiveView uses
+  this information to discern between active and pending players, thus showing a
+  spectator mode for the latter.
+  """
   def get_match_state(match_id) do
     GenServer.call(via_tuple(match_id), :get_match_state)
   end
 
-  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) + 1 == length(expected) do
+  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: game_status} = state) when game_status in [:init, :starting] and length(joined) + 1 == length(expected) do
     all_joined = [player_id|joined]
-    Process.send_after(self(), :game_start, @game_start_timeout)
+    state.scheduler.send_after(self(), :game_start, @game_start_timeout)
 
     {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing}}
   end
 
   # Only on the init state we add players to mark them as JOINED
   # In this case we've arrived at at least two players so we start the timeout, if the timeout happens before we have full quorum we're set
-  def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: :init} = state) when length(joined) >= 1 do
+  def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) when length(joined) >= 1 do
     joined = [player_id|joined]
 
-    # TODO: What happens when one of the two only players leaves? 
-    # When we have at least 2 players joined we
-    Process.send_after(self(), :game_start, @game_start_timeout)
+    state.scheduler.send_after(self(), :game_start, @game_start_timeout)
+
+    {:reply, :ok, %{state|joined: joined, game_status: :starting}}
+  end
+
+  def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :starting} = state) when length(joined) >= 1 do
+    joined = [player_id|joined]
 
     {:reply, :ok, %{state|joined: joined}}
   end
@@ -128,13 +180,11 @@ defmodule StopMyHand.MatchDriver do
   def handle_call(:round_finished, _from, state) do
     broadcast("round_finished", state.match_id, %{})
 
-    Process.send_after(self(), :answers_timeout, @answers_timeout)
+    state.scheduler.send_after(self(), :answers_timeout, @answers_timeout)
     {:reply, :ok, %{state|game_status: :awaiting_answers}}
   end
 
   def handle_call({:player_answers, player_id, player_answers}, _from, state) do
-    IO.inspect(player_answers, label: "Player answers")
-
     player_data = state.player_data
 
     updated_player_data =
@@ -150,7 +200,7 @@ defmodule StopMyHand.MatchDriver do
     if length(updated_players_answered) == length(state.joined) do
       broadcast("in_review", state.match_id, %{category: Enum.at(@categories, state.cat_index)})
 
-      Process.send_after(self(), {:review_timeout, state.cat_index},  @review_timeout)
+      state.scheduler.send_after(self(), {:review_timeout, state.cat_index},  @review_timeout)
 
       {:reply, :ok, %{state|player_data: updated_player_data, game_status: :in_review, players_answered: updated_players_answered}}
     else
@@ -187,17 +237,13 @@ defmodule StopMyHand.MatchDriver do
   def handle_call(:get_match_state, _from, %{game_status: :init} = state), do: {:reply, {:normal, state.player_data}, state}
 
   def handle_call(:get_match_state, _from, %{cat_index: idx, score: score, player_data: player_data, round: round} = state) do
-    # TODO: Player activity? Need to accumulate it
-    # scores
-    # current_category
-    # player_data
-    # round number
     match_state = %{
       score: state.score,
       current_category: Enum.at(@categories, idx),
       current_letter: state.letter,
       player_data: player_data,
-      round_number: round
+      round_number: round,
+      game_status: state.game_status
     }
 
     {:reply, {:ongoing, match_state}, state}
@@ -212,7 +258,7 @@ defmodule StopMyHand.MatchDriver do
 
     broadcast("game_start", state.match_id, payload)
 
-    Process.send_after(self(), :round_timeout, @round_timeout)
+    state.scheduler.send_after(self(), :round_timeout, @round_timeout)
 
     {:noreply, %{state|game_status: :ongoing}}
   end
@@ -249,17 +295,16 @@ defmodule StopMyHand.MatchDriver do
     round_data_with_scores = Score.scores(state.player_data)
     broadcast("show_scores", state.match_id, %{})
 
-    Process.send_after(self(), :show_scores_timeout, @next_round_timeout)
+    state.scheduler.send_after(self(), :show_scores_timeout, @next_round_timeout)
 
     {:noreply, %{state|game_status: :showing_scores, player_data: round_data_with_scores}}
   end
 
-  # TODO: When we skip early when all reviews are in we need to discriminate here on the current index
   def handle_info({:review_timeout, cat_idx}, state) do
     new_cat_index = cat_idx + 1
 
     broadcast("in_review", state.match_id, %{category: Enum.at(@categories, new_cat_index)})
-    Process.send_after(self(), {:review_timeout, new_cat_index},  @review_timeout)
+    state.scheduler.send_after(self(), {:review_timeout, new_cat_index},  @review_timeout)
 
     {:noreply, %{state | cat_index: new_cat_index}}
   end
@@ -267,7 +312,7 @@ defmodule StopMyHand.MatchDriver do
   def handle_info(:show_scores_timeout, state) do
     # 2. Start next round timeout
     broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
-    Process.send_after(self(), :next_round_timeout, @next_round_timeout)
+    state.scheduler.send_after(self(), :next_round_timeout, @next_round_timeout)
 
     player_data = Score.default_player_data(state.expected)
     updated_score = update_match_score(state.player_data, state.score)
@@ -288,7 +333,7 @@ defmodule StopMyHand.MatchDriver do
 
     broadcast("round_start", state.match_id, payload)
 
-    Process.send_after(self(), :round_timeout, @round_timeout)
+    state.scheduler.send_after(self(), :round_timeout, @round_timeout)
 
     {:noreply,
      %{state|
@@ -317,13 +362,6 @@ defmodule StopMyHand.MatchDriver do
 
   defp broadcast(event, match_id, payload) do
     Endpoint.broadcast!("#{@match_topic}:#{match_id}", event, payload)
-  end
-
-  # %{player_id: %{cat: %{reviewer_id: result}}}
-  defp default_reviews(player_ids) do
-    Map.new(player_ids, fn player_id ->
-      {player_id, Map.new(@categories, fn cat -> {cat, Map.new(player_ids -- [player_id], &{&1, :none})} end)}
-    end)
   end
 
   defp update_match_score(player_data, current_match_score) do
