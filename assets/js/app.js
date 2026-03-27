@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-import { createMatch } from "./game_socket.js"
+import { createMatch } from "./game/socket"
 
 // You can include dependencies in two ways.
 //
@@ -25,7 +25,6 @@ import Hooks from "./hooks"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}, hooks: Hooks})
-let channel
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
@@ -42,7 +41,7 @@ liveSocket.connect()
 window.liveSocket = liveSocket
 
 window.addEventListener("phx:connect_match", async ({detail: { match_id, current_user_id }}) => {
-  channel = await createMatch({matchId: match_id, currentUserId: current_user_id})
+  await createMatch({matchId: match_id, currentUserId: current_user_id})
 })
 
 // WARN: A listener suggested in: https://elixirforum.com/t/how-to-close-modal/54331/7
