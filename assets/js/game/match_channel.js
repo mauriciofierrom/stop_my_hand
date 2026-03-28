@@ -40,8 +40,11 @@ export const createAndJoinMatchChannel = (socket, matchId, conferenceManager) =>
   channel.on("show_scores", () => window.dispatchEvent(new CustomEvent("match:score")))
   channel.on("player_activity", (params) => window.dispatchEvent(new CustomEvent("match:onPlayerActivity", { detail: params })))
   channel.on("game_finished", () => window.location = "/")
-  channel.on("peer_joined", ({ user_id }) => conferenceManager.handlePeerJoined(user_id))
-  channel.on("peer_left", ({ user_id }) => conferenceManager.removePeer(user_id))
+
+  if(conferenceManager) {
+    channel.on("peer_joined", ({ user_id }) => conferenceManager.handlePeerJoined(user_id))
+    channel.on("peer_left", ({ user_id }) => conferenceManager.removePeer(user_id))
+  }
 
   channel.join()
     .receive("ok", resp => console.log("Joined match channel", resp))

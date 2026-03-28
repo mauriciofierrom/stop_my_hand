@@ -17,17 +17,18 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
   has videocalling enabled.
   """
 
+  attr :video_enabled, :boolean, doc: "Whether this view should contain video conferencing controls"
   attr :source, :atom, values: [:local, :remote], doc: "where does the view come from", required: true
   attr :peer_id, :integer, required: true
 
   def player_view(assigns) do
     ~H"""
     <div id={"player-view-#{@peer_id}"} phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
-      <video autoplay class="w-24 h-24 object-cover" id={video_id(@source, @peer_id)} />
+      <video :if={@video_enabled} autoplay class="w-24 h-24 object-cover" id={video_id(@source, @peer_id)} />
       <button :if={@source == :local} id="local-mic" class="absolute bottom-2 left-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
           <i class="hero-microphone w-4 h-4 text-green-500"></i>
       </button>
-      <button :if={@source == :local} id="local-camera" class="absolute bottom-2 right-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
+      <button :if={@source == :local && @video_enabled} id="local-camera" class="absolute bottom-2 right-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
           <i class="hero-video-camera-slash w-4 h-4 text-white"></i>
       </button>
     </div>

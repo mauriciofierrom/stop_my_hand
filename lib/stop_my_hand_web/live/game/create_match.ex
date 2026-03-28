@@ -27,6 +27,7 @@ defmodule StopMyHandWeb.Game.CreateMatch do
         </.async_result>
         <.simple_form for={to_form(@changeset)} :let={f} phx-submit="save" phx-target={@myself} id="match">
           <.input type="hidden" field={f[:creator_id]} value={@current_user.id} />
+          <.input type="checkbox" field={f[:video_enabled]} label="Enable video?" />
           <.inputs_for :let={players_form} field={f[:players]} as={:players}>
             <.input type="hidden" field={players_form[:user_id]} />
           </.inputs_for>

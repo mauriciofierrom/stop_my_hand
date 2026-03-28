@@ -15,7 +15,7 @@ defmodule StopMyHandWeb.Game.Match do
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-5 items-center justify-center">
-      <.player_view source={:local} peer_id={@current_user.id} />
+      <.player_view source={:local} peer_id={@current_user.id} video_enabled={@match.video_enabled}/>
       <.round_info round_number={@round_number} score={Map.get(@score, @current_user.id, 0)} current_letter={Map.get(assigns, :current_letter, "")} />
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
@@ -27,7 +27,7 @@ defmodule StopMyHandWeb.Game.Match do
           <%= for {player_id, data} <- @player_data, player_id != @current_user.id do %>
             <div class="flex flex-col gap-3">
               <div class="flex gap-3 items-center text-4xl">
-                <.player_view source={:remote} peer_id={player_id} />
+                <.player_view source={:remote} peer_id={player_id} video_enabled={@match.video_enabled} />
                 <h2>{data.handle}</h2>
                 <div class="font-bold">
                   {Map.get(@score, player_id, 0)}
@@ -45,6 +45,7 @@ defmodule StopMyHandWeb.Game.Match do
 
   def mount(params, _session, socket) do
     match = Game.get_match(params["match_id"])
+    IO.inspect(match.video_enabled, label: "Video has been enabled")
 
     base_assigns = fn player_data ->
       %{
@@ -65,7 +66,8 @@ defmodule StopMyHandWeb.Game.Match do
     {:ok, socket
      |> assign(final_assigns)
      |> assign(:mode, game_mode(game_status))
-     |> push_event("connect_match", %{match_id: match.id, current_user_id: socket.assigns.current_user.id})
+     |> push_event("connect_match", %{match_id: match.id, current_user_id:
+        socket.assigns.current_user.id, video_enabled: match.video_enabled})
     }
   end
 
