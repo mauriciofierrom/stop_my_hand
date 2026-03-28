@@ -22,7 +22,7 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
 
   def player_view(assigns) do
     ~H"""
-    <div id="player-view" phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
+    <div id={"player-view-#{@peer_id}"} phx-update="ignore" class="relative w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium rounded-lg">
       <video autoplay class="w-24 h-24 object-cover" id={video_id(@source, @peer_id)} />
       <button :if={@source == :local} id="local-mic" class="absolute bottom-2 left-2 p-1.5 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70">
           <i class="hero-microphone w-4 h-4 text-green-500"></i>
