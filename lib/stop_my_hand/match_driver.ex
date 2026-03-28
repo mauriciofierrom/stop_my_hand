@@ -10,7 +10,7 @@ defmodule StopMyHand.MatchDriver do
   @quorum_timeout 45_000
   @game_start_timeout 1_000
   @answers_timeout 10_000
-  @review_timeout 10_000
+  @base_review_timeout 10_000
   @next_round_timeout 5_000
   @match_topic "match"
   @countdown 3
@@ -23,14 +23,14 @@ defmodule StopMyHand.MatchDriver do
   Scheduler is used to determine how the genserver will handle timeouts for testing purposes.
   The default implementation calls `send_after/3`.
   """
-  def start_link(%{players: players, match_id: match_id, scheduler: scheduler}) do
-    GenServer.start_link(__MODULE__, {players, match_id, scheduler}, name: via_tuple(match_id))
+  def start_link(%{players: players, match_id: match_id}) do
+    GenServer.start_link(__MODULE__, {players, match_id}, name: via_tuple(match_id))
   end
 
-  def init({expected_players, match_id, scheduler}) do
+  def init({expected_players, match_id}) do
     {starting_letter, alphabet} = pick_letter_from(make_alphabet())
 
-    scheduler.send_after(self(), :no_quorum, @quorum_timeout)
+    scheduler().send_after(self(), :no_quorum, @quorum_timeout)
     player_data = Score.default_player_data(expected_players)
 
     initial_state = %{
@@ -46,7 +46,6 @@ defmodule StopMyHand.MatchDriver do
       cat_index: 0,
       players_answered: [],
       player_data: player_data,
-      scheduler: scheduler,
       score: (for expected_player <- expected_players, into: %{}, do: {expected_player.id, 0})
     }
 
@@ -132,7 +131,7 @@ defmodule StopMyHand.MatchDriver do
 
   def handle_call({:add_player, player_id}, _from, %{expected: expected, joined: joined, game_status: game_status} = state) when game_status in [:init, :starting] and length(joined) + 1 == length(expected) do
     all_joined = [player_id|joined]
-    state.scheduler.send_after(self(), :game_start, @game_start_timeout)
+    scheduler().send_after(self(), :game_start, @game_start_timeout)
 
     {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing}}
   end
@@ -142,7 +141,7 @@ defmodule StopMyHand.MatchDriver do
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) when length(joined) >= 1 do
     joined = [player_id|joined]
 
-    state.scheduler.send_after(self(), :game_start, @game_start_timeout)
+    scheduler().send_after(self(), :game_start, @game_start_timeout)
 
     {:reply, :ok, %{state|joined: joined, game_status: :starting}}
   end
@@ -180,7 +179,7 @@ defmodule StopMyHand.MatchDriver do
   def handle_call(:round_finished, _from, state) do
     broadcast("round_finished", state.match_id, %{})
 
-    state.scheduler.send_after(self(), :answers_timeout, @answers_timeout)
+    scheduler().send_after(self(), :answers_timeout, @answers_timeout)
     {:reply, :ok, %{state|game_status: :awaiting_answers}}
   end
 
@@ -200,7 +199,7 @@ defmodule StopMyHand.MatchDriver do
     if length(updated_players_answered) == length(state.joined) do
       broadcast("in_review", state.match_id, %{category: Enum.at(@categories, state.cat_index)})
 
-      state.scheduler.send_after(self(), {:review_timeout, state.cat_index},  @review_timeout)
+      scheduler().send_after(self(), {:review_timeout, state.cat_index},  @base_review_timeout * length(state.joined))
 
       {:reply, :ok, %{state|player_data: updated_player_data, game_status: :in_review, players_answered: updated_players_answered}}
     else
@@ -258,7 +257,7 @@ defmodule StopMyHand.MatchDriver do
 
     broadcast("game_start", state.match_id, payload)
 
-    state.scheduler.send_after(self(), :round_timeout, @round_timeout)
+    scheduler().send_after(self(), :round_timeout, @round_timeout)
 
     {:noreply, %{state|game_status: :ongoing}}
   end
@@ -285,17 +284,21 @@ defmodule StopMyHand.MatchDriver do
     updated_joined = state.joined -- missing
     updated_pending = (state.pending ++ missing) |> Enum.uniq()
 
+    scheduler().send_after(self(), {:review_timeout, state.cat_index},  (@base_review_timeout * length(state.joined)))
+
     {:noreply, %{state | joined: updated_joined, pending: updated_pending, game_status: :in_review}}
   end
 
-  def handle_info(:answers_timeout, state), do: {:noreply, state}
+  def handle_info(:answers_timeout, state) do
+    {:noreply, state}
+  end
 
   # We just start the timeout for the next round
   def handle_info({:review_timeout, cat_idx}, state) when cat_idx >= length(@categories) - 1 do
     round_data_with_scores = Score.scores(state.player_data)
     broadcast("show_scores", state.match_id, %{})
 
-    state.scheduler.send_after(self(), :show_scores_timeout, @next_round_timeout)
+    scheduler().send_after(self(), :show_scores_timeout, @next_round_timeout)
 
     {:noreply, %{state|game_status: :showing_scores, player_data: round_data_with_scores}}
   end
@@ -304,7 +307,7 @@ defmodule StopMyHand.MatchDriver do
     new_cat_index = cat_idx + 1
 
     broadcast("in_review", state.match_id, %{category: Enum.at(@categories, new_cat_index)})
-    state.scheduler.send_after(self(), {:review_timeout, new_cat_index},  @review_timeout)
+    scheduler().send_after(self(), {:review_timeout, new_cat_index},  @base_review_timeout * length(state.joined))
 
     {:noreply, %{state | cat_index: new_cat_index}}
   end
@@ -312,7 +315,7 @@ defmodule StopMyHand.MatchDriver do
   def handle_info(:show_scores_timeout, state) do
     # 2. Start next round timeout
     broadcast("next_round", state.match_id, %{timeout: @next_round_timeout / 1_000})
-    state.scheduler.send_after(self(), :next_round_timeout, @next_round_timeout)
+    scheduler().send_after(self(), :next_round_timeout, @next_round_timeout)
 
     player_data = Score.default_player_data(state.expected)
     updated_score = update_match_score(state.player_data, state.score)
@@ -333,7 +336,7 @@ defmodule StopMyHand.MatchDriver do
 
     broadcast("round_start", state.match_id, payload)
 
-    state.scheduler.send_after(self(), :round_timeout, @round_timeout)
+    scheduler().send_after(self(), :round_timeout, @round_timeout)
 
     {:noreply,
      %{state|
@@ -370,5 +373,9 @@ defmodule StopMyHand.MatchDriver do
         round_score = Enum.reduce(data.answers, 0, fn {_cat, answer}, sum -> sum + answer.result.points end)
         put_in(current_scores[player_id], current_scores[player_id] + round_score)
     end
+  end
+
+  defp scheduler do
+    Application.get_env(:stop_my_hand, :scheduler)
   end
 end

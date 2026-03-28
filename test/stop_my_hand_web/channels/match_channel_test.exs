@@ -4,7 +4,11 @@ defmodule StopMyHandWeb.MatchChannelTest do
   alias StopMyHand.MatchDriver
   import StopMyHand.GameFixtures
 
+  import Mox
+  setup :set_mox_global
+
   setup do
+    Mox.stub_with(StopMyHand.Scheduler.Mock, StopMyHand.Scheduler.Test)
     match = create_match()
 
     players = [match.creator|(for player <- match.players, do: player.user)]
