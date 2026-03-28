@@ -5,6 +5,7 @@ defmodule StopMyHand.Game.Match do
   alias StopMyHand.Accounts.User
 
   schema "matches" do
+    field :video_enabled, :boolean
 
     belongs_to :creator, User
     has_many :players, Player, foreign_key: :match_id
@@ -15,7 +16,7 @@ defmodule StopMyHand.Game.Match do
   @doc false
   def changeset(match, attrs) do
     match
-    |> cast(attrs, [:creator_id])
+    |> cast(attrs, [:creator_id, :video_enabled])
     |> cast_assoc(:players)
     |> validate_required([:creator_id])
   end

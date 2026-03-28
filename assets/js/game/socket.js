@@ -2,37 +2,50 @@
 // you uncomment its entry in "assets/js/app.js".
 
 // Bring in Phoenix matchChannels client library:
-import {Socket} from "phoenix"
-import {ConferenceManager} from "./conference/conference_manager"
+import { Socket } from "phoenix"
+import { ConferenceManager } from "./conference/conference_manager"
 import { createUserChannel, joinUserChannel } from "./conference/user_channel"
 import { createAndJoinMatchChannel } from "./match_channel"
 import { setupMediaControls, onRemoteTrack } from "./conference/media_controls"
 
 // And connect to the path in "lib/stop_my_hand_web/endpoint.ex". We pass the
 // token for authentication. Read below how it should be used.
-let socket = new Socket("/game", {params: {token: window.userToken}})
+let socket = new Socket("/game", { params: { token: window.userToken } })
 
-export async function createMatch({matchId, currentUserId}) {
-  if(!socket.isConnected()) {
+export async function createMatch({ matchId, currentUserId, videoEnabled }) {
+  if (!socket.isConnected()) {
     socket.connect()
   }
 
-  const userChannel = createUserChannel(socket, currentUserId)
+  let conferenceManager
+  let userChannel
 
-  const conferenceManager = new ConferenceManager(
-    userChannel,
-    currentUserId,
-    onRemoteTrack,
-    (peerId, state) => {
-      console.log(`Peer ${peerId} connection state: ${state}`)
-    }
-  );
+  console.log(videoEnabled);
 
-  await setupMediaControls(conferenceManager)
+  if (videoEnabled) {
+    userChannel = createUserChannel(socket, currentUserId)
 
-  const matchChannel = createAndJoinMatchChannel(socket, matchId, conferenceManager)
+    conferenceManager = new ConferenceManager(
+      userChannel,
+      currentUserId,
+      onRemoteTrack,
+      (peerId, state) => {
+        console.log(`Peer ${peerId} connection state: ${state}`)
+      },
+    )
 
-  joinUserChannel(userChannel, conferenceManager)
+    await setupMediaControls(conferenceManager)
+  }
+
+  const matchChannel = createAndJoinMatchChannel(
+    socket,
+    matchId,
+    conferenceManager,
+  )
+
+  if (videoEnabled) {
+    joinUserChannel(userChannel, conferenceManager)
+  }
 }
 
 export default socket
