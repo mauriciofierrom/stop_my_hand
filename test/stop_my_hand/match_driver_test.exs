@@ -1,22 +1,27 @@
 defmodule StopMyHand.MatchDriverTest do
-  use StopMyHand.DataCase
+  use StopMyHand.DataCase, async: false
 
   alias StopMyHand.MatchDriver
   alias StopMyHandWeb.Endpoint
+  import Mox
 
   import StopMyHand.GameFixtures
 
   @match_topic "match"
   @category_amount 6
 
+  setup :set_mox_global
+  setup :verify_on_exit!
+
   describe "MatchDriver" do
     setup do
+      Mox.stub_with(StopMyHand.Scheduler.Mock, StopMyHand.Scheduler.Test)
+
       match = create_match()
       players = [match.creator|(for player <- match.players, do: player.user)]
       {:ok, pid}  = MatchDriver.start_link(
-        %{players: players, match_id: match.id, scheduler: StopMyHand.Scheduler.Test}
+        %{players: players, match_id: match.id}
       )
-
       {:ok, %{match: match, match_driver_pid: pid}}
     end
 
@@ -297,6 +302,38 @@ the reported answers only", context do
       assert_receive %Phoenix.Socket.Broadcast{event: "round_start", payload: payload}
       assert payload.round == current_round_number + 1
       refute payload.letter == current_letter
+    end
+
+    test "review timeout is the 10 seconds per active player" do
+      match = create_match()
+      players = [match.creator|(for player <- match.players, do: player.user)]
+
+      {:ok, pid} = MatchDriver.start_link(
+        %{players: players, match_id: match.id}
+      )
+
+      MatchDriver.add_player(match.id, match.creator)
+      MatchDriver.add_player(match.id, Enum.at(match.players, 0))
+      MatchDriver.add_player(match.id, Enum.at(match.players, 1))
+
+      send(pid, :game_start)
+
+      player = Enum.at(match.players, 0)
+      player_id = player.user.id
+
+      MatchDriver.finish_round(match.id)
+      MatchDriver.report_player_answers(match.id, player_id, [{"name", "some"}])
+
+      send(pid, :answers_timeout)
+
+      expect(StopMyHand.Scheduler.Mock, :send_after, fn _pid, {:review_timeout, _idx}, timeout ->
+        assert timeout == 30_000
+        :ok
+      end)
+
+      {:ongoing, match_state} = MatchDriver.get_match_state(match.id)
+
+      assert match_state.game_status == :in_review
     end
   end
 end
