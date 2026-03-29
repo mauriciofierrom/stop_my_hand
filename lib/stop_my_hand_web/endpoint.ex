@@ -48,5 +48,10 @@ defmodule StopMyHandWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  if Application.compile_env(:stop_my_hand, :sql_sandbox) do
+    plug Phoenix.Ecto.SQL.Sandbox,
+      at: "/sandbox",
+      repo: StopMyHand.Repo
+  end
   plug StopMyHandWeb.Router
 end

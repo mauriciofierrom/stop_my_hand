@@ -55,7 +55,7 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
       <div class="flex gap-2">
         <div :for={{category, activity} <- @player_activity[@player_id]} class="flex gap-2 items-center justify-center">
           <span class="font-bold text-xl">{translate_category(category)}:</span>
-          <div class="flex flex-col items-center justify-center">
+          <div class="flex flex-col items-center justify-center" data-testid={"#{category}-activity-#{@player_id}"}>
             {activity}
           </div>
         </div>

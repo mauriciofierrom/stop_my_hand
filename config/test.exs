@@ -20,7 +20,7 @@ config :stop_my_hand, StopMyHand.Repo,
 config :stop_my_hand, StopMyHandWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "7WD/n8yD9HY850bw9i5T1HtIX8AIbVaWU0c04a1sYWiP+N1wAzXGNzQEek50f9/9",
-  server: false
+  server: true
 
 # In test we don't send emails.
 config :stop_my_hand, StopMyHand.Mailer, adapter: Swoosh.Adapters.Test
@@ -41,3 +41,4 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+config :stop_my_hand, sql_sandbox: true

@@ -16,6 +16,12 @@ defmodule StopMyHandWeb.Router do
     plug :put_user_token
   end
 
+  pipeline :test_browser do
+    plug :accepts, ["html", "json"]
+    plug :fetch_session
+    plug :put_secure_browser_headers
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -94,6 +100,14 @@ defmodule StopMyHandWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     get "/ice-servers", IceServerController, :ice_servers
+  end
+
+  if Application.compile_env(:stop_my_hand, :sql_sandbox) do
+    scope "/test" do
+      pipe_through :test_browser
+      post "/setup", StopMyHandWeb.TestSetupController, :setup
+      post "/login", StopMyHandWeb.TestSetupController, :login
+    end
   end
 
   defp put_user_token(conn, _) do
