@@ -1,0 +1,10 @@
+{
+  "name": "stop_my_hand",
+  "version": "1.0.0",
+  "description": "Stop My Hand is a real-time, multiplayer online version of the Scarttegories game.",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^25.5.0"
+  },
+  "scripts": {}
+}

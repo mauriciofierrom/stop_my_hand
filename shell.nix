@@ -15,6 +15,7 @@ let
     nodePackages.prettier
     # Gigalixir CLI
     gigalixir
+    playwright-driver.browsers
   ];
 
   inputs = with pkgs; basePackages ++ lib.optionals stdenv.isLinux [ inotify-tools ]
@@ -47,6 +48,11 @@ let
     export MIX_ENV=dev
     # add your project env vars here, word readable in the nix store.
     export ENV_VAR="your_env_var"
+
+    # playwright related
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+    export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE="ubuntu-24.04"
   '';
 
 in pkgs.mkShell {
