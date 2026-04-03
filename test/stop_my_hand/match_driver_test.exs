@@ -304,7 +304,7 @@ the reported answers only", context do
       refute payload.letter == current_letter
     end
 
-    test "review timeout is the 10 seconds per active player" do
+    test "review timeout is proportional to number of active player" do
       match = create_match()
       players = [match.creator|(for player <- match.players, do: player.user)]
 
@@ -327,7 +327,7 @@ the reported answers only", context do
       send(pid, :answers_timeout)
 
       expect(StopMyHand.Scheduler.Mock, :send_after, fn _pid, {:review_timeout, _idx}, timeout ->
-        assert timeout == 30_000
+        assert ceil(timeout / Application.get_env(:stop_my_hand, :timeouts)[:review]) == 3
         :ok
       end)
 
