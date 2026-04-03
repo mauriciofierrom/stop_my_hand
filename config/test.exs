@@ -42,3 +42,4 @@ config :logger, level: :warning
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 config :stop_my_hand, sql_sandbox: true
+config :stop_my_hand, :timeouts, review: 1_000

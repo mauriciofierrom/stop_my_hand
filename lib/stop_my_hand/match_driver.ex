@@ -10,7 +10,7 @@ defmodule StopMyHand.MatchDriver do
   @quorum_timeout 45_000
   @game_start_timeout 1_000
   @answers_timeout 10_000
-  @base_review_timeout 10_000
+  @base_review_timeout Application.compile_env(:stop_my_hand, [:timeouts, :review])
   @next_round_timeout 5_000
   @match_topic "match"
   @countdown 3
