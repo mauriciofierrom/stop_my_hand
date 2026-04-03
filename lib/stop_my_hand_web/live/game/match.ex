@@ -20,7 +20,7 @@ defmodule StopMyHandWeb.Game.Match do
       <div id="game" class={["flex flex-col gap-5 items-center justify-center"]} phx-hook="MatchHook">
         <.simple_form :let={f} for={to_form(Map.from_struct(@round))} id="round">
           <div class="flex gap-3">
-            <.scored_field :for={category <- @categories} form={f} category={category} score={get_in(@player_data, [@current_user.id, :answers, category, :result])} />
+            <.scored_field :for={category <- @categories} form={f} category={category} score={get_in(@player_data, [@current_user.id, :answers, category, :result])}  player_id={@current_user.id}/>
           </div>
         </.simple_form>
         <div class="flex flex-col gap-3">
@@ -150,7 +150,7 @@ defmodule StopMyHandWeb.Game.Match do
   defp scored_field(assigns) do
     ~H"""
     <div class="flex flex-col items-center justify-center">
-      <.score :if={assigns.score} result={@score} />
+      <.score :if={assigns.score} result={@score} category={@category} player_id={@player_id}/>
       <div>
         <.input field={@form[@category]} label={translate_category(@category)} data-category={Atom.to_string(@category)}/>
       </div>

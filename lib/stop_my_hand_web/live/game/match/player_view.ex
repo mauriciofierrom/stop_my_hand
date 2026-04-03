@@ -84,7 +84,9 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
       <div :for={category <- @categories} class="flex gap-2 items-center justify-center">
         <span class="font-bold text-xl">{translate_category(category)}:</span>
         <div class="flex flex-col items-center justify-center">
-          <.score :if={get_in(@player_data, [:answers, category, :result])} result={get_in(@player_data, [:answers, category, :result])} />
+          <.score :if={get_in(@player_data, [:answers, category, :result])}
+          result={get_in(@player_data, [:answers, category, :result])}
+          category={category} player_id={@player_id}/>
           <%= if @player_data.answers[category].value == "" do %>
             <span>--</span>
           <% else %>
@@ -96,13 +98,15 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
         <.button
           :if={category_submitted?(@current_category, category, @player_data.answers[category].value)}
           class={review_button_class(@player_data.answers[category].reviews[@current_user_id], :accepted)}
-          phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="accepted">
+          phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="accepted"
+          data-testid={"accept-button-#{@current_category}"}>
           <.icon name="hero-check" />
         </.button>
         <.button
           :if={category_submitted?(@current_category, category, @player_data.answers[category].value)}
           class={review_button_class(@player_data.answers[category].reviews[@current_user_id], :rejected)}
-          phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="rejected">
+          phx-click="review_answer" phx-value-playerid={@player_id} phx-value-result="rejected"
+          data-testid={"reject-button-#{@current_category}"}>
           <.icon name="hero-x-mark" />
         </.button>
       </div>
@@ -111,11 +115,14 @@ defmodule StopMyHandWeb.Game.Match.PlayerView do
   end
 
   attr :result, :map, required: true
+  attr :category, :string, required: true
+  attr :player_id, :integer, required: true
 
   def score(assigns) do
     ~H"""
-      <div class={[points_class(@result.reason), "font-bold"]}>
-        {@result.points}
+      <div class={[points_class(@result.reason), "font-bold"]}
+        data-testid={"score-#{@category}-#{@player_id}"}>
+        {ceil(@result.points)}
       </div>
     """
   end
