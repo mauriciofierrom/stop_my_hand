@@ -47,7 +47,7 @@ defmodule StopMyHand.MixProject do
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.3"},
       {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
@@ -56,6 +56,8 @@ defmodule StopMyHand.MixProject do
       {:ex_doc, "~> 0.25.0", only: :dev},
       {:mix_test_watch, "~> 1.4", only: [:dev, :test], runtime: false},
       {:lazy_html, ">= 0.1.0", only: :test},
+      {:unplug, "~> 1.1"},
+      {:prom_ex, "~> 1.11"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
