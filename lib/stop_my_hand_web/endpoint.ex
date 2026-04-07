@@ -38,6 +38,10 @@ defmodule StopMyHandWeb.Endpoint do
     cookie_key: "request_logger"
 
   plug Plug.RequestId
+
+  plug Unplug,
+    if: {StopMyHand.SecureMetricsEndpoint, "PROMETHEUS_AUTH_SECRET"},
+    do: {PromEx.Plug, prom_ex_module: StopMyHand.PromEx}
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug Plug.Parsers,

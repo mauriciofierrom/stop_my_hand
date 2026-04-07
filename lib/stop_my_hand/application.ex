@@ -8,6 +8,8 @@ defmodule StopMyHand.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      # Start the prometheus metrics
+      StopMyHand.PromEx,
       # Start the Telemetry supervisor
       StopMyHandWeb.Telemetry,
       # Start the Ecto repository
