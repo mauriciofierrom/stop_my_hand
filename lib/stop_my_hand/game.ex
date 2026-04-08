@@ -45,4 +45,8 @@ defmodule StopMyHand.Game do
     |> Match.changeset(attrs)
     |> Repo.insert()
   end
+
+  def get_created_match_count() do
+    Repo.aggregate(Match, :count)
+  end
 end
