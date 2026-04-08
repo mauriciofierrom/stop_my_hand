@@ -49,7 +49,11 @@ defmodule StopMyHandWeb.Router do
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: StopMyHandWeb.Telemetry
+      live_dashboard "/dashboard",
+        metrics: StopMyHandWeb.Telemetry,
+        additional_pages: [
+          route_name: StopMyHandWeb.Dashboard.StatsPage
+        ]
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
