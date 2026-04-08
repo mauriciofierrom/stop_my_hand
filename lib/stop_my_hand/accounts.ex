@@ -350,4 +350,9 @@ defmodule StopMyHand.Accounts do
       {:error, :user, changeset, _} -> {:error, changeset}
     end
   end
+
+  def get_active_users_count() do
+    query = from u in "users", where: not is_nil(u.confirmed_at), select: u.id
+    Repo.aggregate(query, :count)
+  end
 end
