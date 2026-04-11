@@ -16,6 +16,7 @@ let
     # Gigalixir CLI
     gigalixir
     playwright-driver.browsers
+    terraform
   ];
 
   inputs = with pkgs; basePackages ++ lib.optionals stdenv.isLinux [ inotify-tools ]
