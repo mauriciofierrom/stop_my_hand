@@ -39,9 +39,7 @@ defmodule StopMyHandWeb.Endpoint do
 
   plug Plug.RequestId
 
-  plug Unplug,
-    if: {StopMyHand.SecureMetricsEndpoint, "PROMETHEUS_AUTH_SECRET"},
-    do: {PromEx.Plug, prom_ex_module: StopMyHand.PromEx}
+  plug StopMyHand.Plugs.Metrics
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug Plug.Parsers,
