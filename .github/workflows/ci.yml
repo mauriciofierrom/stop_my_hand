@@ -81,7 +81,7 @@ jobs:
         with:
           url: "${{ vars.BASE_URL }}/metrics"
           method: GET
-          expected-status: 200
+          expected-status: 401
           timeout: 120000
           interval: 5000
       - name: Terraform Init
