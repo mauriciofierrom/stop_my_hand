@@ -59,3 +59,39 @@ jobs:
           EMAIL_ENCODED=$(echo "$GIGALIXIR_EMAIL" | sed 's/@/%40/g')
           git remote add gigalixir https://$EMAIL_ENCODED:$GIGALIXIR_API_KEY@git.gigalixir.com/$GIGALIXIR_APP_NAME.git
           git push gigalixir main
+  terraform:
+    runs-on: ubuntu-latest
+    needs: deploy
+    defaults:
+      run:
+        working-directory: terraform
+    env:
+      TF_VAR_grafana_auth: ${{ secrets.GRAFANA_AUTH }}
+      TF_VAR_metrics_bearer_token: ${{ secrets.METRICS_BEARER_TOKEN }}
+      TF_VAR_base_url: ${{ vars.BASE_URL }}
+      TF_ACCESS_KEY: ${{ secrets.TF_ACCESS_KEY }}
+      TF_SECRET_KEY: ${{ secrets.TF_SECRET_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Wait for /metrics
+        uses: emilioschepis/wait-for-endpoint@v1.0.3
+        with:
+          url: "${{ vars.BASE_URL }}/metrics"
+          method: GET
+          expected-status: 200
+          timeout: 120000
+          interval: 5000
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="access_key=$TF_ACCESS_KEY" \
+            -backend-config="secret_key=$TF_SECRET_KEY"
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+      - name: Terraform Apply
+        run: terraform apply tfplan
