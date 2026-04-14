@@ -589,6 +589,7 @@ defmodule StopMyHandWeb.CoreComponents do
   end
 
   slot :inner_block, required: true
+  attr :id, :string, required: true
 
   def dropdown_item(assigns) do
     outer_id = assigns.id
