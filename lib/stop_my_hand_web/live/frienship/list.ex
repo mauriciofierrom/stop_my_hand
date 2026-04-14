@@ -1,9 +1,7 @@
 defmodule StopMyHandWeb.Friendship.List do
   use StopMyHandWeb, :html
 
-  alias Phoenix.LiveView.AsyncResult
   alias StopMyHandWeb.Dropdown
-  alias Phoenix.LiveView.JS
   alias StopMyHandWeb.Friendship.Search
 
   def friend_list(assigns) do
