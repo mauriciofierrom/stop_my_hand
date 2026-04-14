@@ -162,10 +162,10 @@ defmodule StopMyHand.MatchDriver do
     {:reply, :ok, %{state|pending: [player_id|pending]}}
   end
 
-  def handle_call({:remove_player, player_id}, _from, %{game_status: :init} = state), do: {:reply, :ok, state}
+  def handle_call({:remove_player, _player_id}, _from, %{game_status: :init} = state), do: {:reply, :ok, state}
 
   # We're out, there's not enough players and we're not in the initialization phase to be lenient
-  def handle_call({:remove_player, player_id}, _from, %{joined: joined} = state) when (length(joined) - 1) <= 1 do
+  def handle_call({:remove_player, _player_id}, _from, %{joined: joined} = state) when (length(joined) - 1) <= 1 do
     # Tell the channels to redirect
     broadcast("game_finished", state.match_id, %{})
 
@@ -237,7 +237,7 @@ defmodule StopMyHand.MatchDriver do
 
   def handle_call(:get_match_state, _from, %{cat_index: idx, score: score, player_data: player_data, round: round} = state) do
     match_state = %{
-      score: state.score,
+      score: score,
       current_category: Enum.at(@categories, idx),
       current_letter: state.letter,
       player_data: player_data,
