@@ -3,7 +3,6 @@ defmodule StopMyHandWeb.Game.Lobby do
 
   alias StopMyHand.Game
   alias StopMyHand.Game.Player
-  alias StopMyHand.Accounts
   alias StopMyHandWeb.Presence
   alias StopMyHandWeb.Endpoint
   alias Phoenix.LiveView.AsyncResult
