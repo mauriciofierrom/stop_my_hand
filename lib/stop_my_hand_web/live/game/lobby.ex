@@ -103,14 +103,6 @@ defmodule StopMyHandWeb.Game.Lobby do
     """
   end
 
-  defp status_message_class(status) do
-    base = ["text-sm italic"]
-    case status do
-      :online -> ["text-green-500" | base]
-      _ -> ["text-gray-500" | base]
-    end
-  end
-
   defp player_handle(player, current_user) do
     if player.user.username == current_user.username, do: gettext("Me"), else: player.user.username
   end
