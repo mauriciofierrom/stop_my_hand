@@ -2,12 +2,10 @@ defmodule StopMyHand.Game do
   @moduledoc """
   The Game context.
   """
-  @notification "notification"
 
   import Ecto.Query, warn: false
 
   alias StopMyHand.Repo
-  alias StopMyHandWeb.Endpoint
   alias StopMyHand.Game.{Match, Player}
   alias StopMyHand.Notification
 
