@@ -263,7 +263,7 @@ defmodule StopMyHand.MatchDriver do
   end
 
   def handle_info(:no_quorum, %{game_status: :init} = state) do
-    GenServer.stop(self(), :no_quorum, 5000)
+    {:stop, :no_quorum, state}
   end
 
   def handle_info(:no_quorum, state) do
