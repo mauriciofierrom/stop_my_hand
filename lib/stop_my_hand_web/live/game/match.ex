@@ -59,7 +59,7 @@ defmodule StopMyHandWeb.Game.Match do
 
     {game_status, final_assigns} =
       case MatchDriver.get_match_state(match.id) do
-        {:normal, player_data} -> {:normal, Map.merge(base_assigns.(player_data), initial_match_state(match, player_data))}
+        {:normal, player_data} -> {:normal, Map.merge(base_assigns.(player_data), initial_match_state(player_data))}
         {:ongoing, current_match_state} -> {:ongoing, Map.merge(base_assigns.(current_match_state.player_data), current_match_state)}
       end
 
@@ -134,7 +134,7 @@ defmodule StopMyHandWeb.Game.Match do
     end
   end
 
-  defp initial_match_state(match, player_data) do
+  defp initial_match_state(player_data) do
     %{
       round: %Round{},
       round_number: 1,
