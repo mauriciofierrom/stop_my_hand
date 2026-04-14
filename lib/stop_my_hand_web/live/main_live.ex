@@ -8,7 +8,6 @@ defmodule StopMyHandWeb.Main do
   alias StopMyHand.Repo
   alias StopMyHand.Friendship
   alias StopMyHand.Accounts
-  alias StopMyHand.Notification
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHandWeb.Friendship.List
   alias StopMyHandWeb.Game.CreateMatch
