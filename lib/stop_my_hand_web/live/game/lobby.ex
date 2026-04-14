@@ -21,7 +21,7 @@ defmodule StopMyHandWeb.Game.Lobby do
           <% end %>
         </div>
         <%= if @match.creator_id == assigns.current_user.id do %>
-          <.button class="disabled:opacity-50 disabled:cursor-not-allowed text-6xl px-4 py-4" disabled={!can_start_game(@match.creator_id, assigns.current_user.id, @players)} phx-click="play">
+          <.button class="disabled:opacity-50 disabled:cursor-not-allowed text-6xl px-4 py-4" disabled={!can_start_game(@match.creator_id, @players)} phx-click="play">
             <%= gettext("Play") %>!
           </.button>
         <% end %>
@@ -117,7 +117,7 @@ defmodule StopMyHandWeb.Game.Lobby do
     end)
   end
 
-  defp can_start_game(match_creator_id, current_user_id, async_players) do
+  defp can_start_game(match_creator_id, async_players) do
     %AsyncResult{result: players} = async_players
     filtered = Enum.filter(players, fn {p, s} ->
       s == :online && !is_nil(p.id) && p.id != match_creator_id end)
