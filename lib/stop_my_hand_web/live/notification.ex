@@ -88,5 +88,5 @@ defmodule StopMyHandWeb.Notification do
   end
 
   defp bell_icon(unread_count) when unread_count > 0, do: "hero-bell"
-  defp bell_icon(unread_count), do: "hero-bell-slash"
+  defp bell_icon(_unread_count), do: "hero-bell-slash"
 end
