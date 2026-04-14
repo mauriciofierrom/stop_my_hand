@@ -4,7 +4,8 @@ defmodule StopMyHand.Notification do
   """
 
   import Ecto.Query, warn: false
-  import Logger
+
+  require Logger
 
   alias StopMyHand.Repo
   alias StopMyHandWeb.Endpoint
