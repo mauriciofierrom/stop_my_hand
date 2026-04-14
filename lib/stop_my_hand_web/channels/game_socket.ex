@@ -40,7 +40,7 @@ defmodule StopMyHandWeb.GameSocket do
     case Phoenix.Token.verify(socket, "user socket", token, max_age: 1_209_600) do
       {:ok, user_id} ->
         {:ok, assign(socket, :user, user_id)}
-      {:error, reason} ->
+      {:error, _reason} ->
         :error
     end
   end
