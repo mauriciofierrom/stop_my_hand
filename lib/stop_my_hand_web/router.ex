@@ -2,7 +2,6 @@ defmodule StopMyHandWeb.Router do
   use StopMyHandWeb, :router
 
   import StopMyHandWeb.UserAuth
-  import StopMyHandWeb.IceServerController
 
   pipeline :browser do
     plug :accepts, ["html"]
