@@ -25,12 +25,14 @@ defmodule StopMyHandWeb.MatchChannel do
   - To the `WebRTC` signaling
   """
   def terminate({:shutdown, _reason}, socket) do
-    MatchDriver.remove_player(socket.assigns.match_id, socket.assigns.user)
+    if GenServer.whereis({:via, Registry, {StopMyHand.Registry, socket.assigns.match_id}}) do
+      MatchDriver.remove_player(socket.assigns.match_id, socket.assigns.user)
 
-    # WebRTC
-    broadcast_from!(socket, "peer_left", %{user_id: socket.assigns.user})
+      # WebRTC
+      broadcast_from!(socket, "peer_left", %{user_id: socket.assigns.user})
+    end
 
-    {:noreply, socket}
+    {:ok, socket}
   end
 
   @impl true

@@ -2,7 +2,7 @@ defmodule StopMyHand.MatchDriver do
   @moduledoc """
   A GenServer to drive the match and its rounds
   """
-  use GenServer
+  use GenServer, restart: :temporary
 
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.Game.Score

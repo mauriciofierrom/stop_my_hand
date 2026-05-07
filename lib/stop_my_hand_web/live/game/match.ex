@@ -7,8 +7,11 @@ defmodule StopMyHandWeb.Game.Match do
   alias StopMyHand.Game
   alias StopMyHand.Game.Round
   alias StopMyHand.MatchDriver
+
   import StopMyHandWeb.Game.Match.Round
   import StopMyHandWeb.Game.Match.PlayerView
+
+  require Logger
 
   @categories [:name, :last_name, :city, :color, :animal, :thing]
 
@@ -44,31 +47,55 @@ defmodule StopMyHandWeb.Game.Match do
   end
 
   def mount(params, _session, socket) do
-    match = Game.get_match(params["match_id"])
-    IO.inspect(match.video_enabled, label: "Video has been enabled")
+    try do
+      match = Game.get_match(params["match_id"])
 
-    base_assigns = fn player_data ->
-      %{
-        categories: @categories,
-        reviewing: false,
-        round: %Round{},
-        match: match,
-        player_activity: default_player_activity(Map.keys(player_data), @categories),
+      if not Game.player_in_match?(match, socket.assigns.current_user.id) do
+        Logger.warning("Unauthorized match access attempt", match_id: match.id, user_id: socket.assigns.current_user.id)
+
+        {:ok, socket
+        |> put_flash(:error, "Player does not belong in match")
+        |> redirect(to: ~p"/")
+        }
+      else
+        Logger.info("Video status", match_id: match.id, video_enabled: match.video_enabled)
+
+        if connected?(socket) do
+          driver_pid = GenServer.whereis({:via, Registry, {StopMyHand.Registry, match.id}})
+          Process.monitor(driver_pid)
+        end
+
+        base_assigns = fn player_data ->
+          %{
+            categories: @categories,
+            reviewing: false,
+            round: %Round{},
+            match: match,
+            player_activity: default_player_activity(Map.keys(player_data), @categories),
+          }
+        end
+
+        {game_status, final_assigns} =
+          case MatchDriver.get_match_state(match.id) do
+            {:normal, player_data} -> {:normal, Map.merge(base_assigns.(player_data), initial_match_state(player_data))}
+            {:ongoing, current_match_state} -> {:ongoing, Map.merge(base_assigns.(current_match_state.player_data), current_match_state)}
+          end
+
+        {:ok, socket
+        |> assign(final_assigns)
+        |> assign(:mode, game_mode(game_status))
+        |> push_event("connect_match", %{match_id: match.id, current_user_id:
+            socket.assigns.current_user.id, video_enabled: match.video_enabled})
+        }
+      end
+    rescue
+      Ecto.NoResultsError ->
+        Logger.error("Match not found", match_id: params["match_id"])
+      {:ok, socket
+      |> put_flash(:error, "Match not found")
+      |> redirect(to: ~p"/")
       }
     end
-
-    {game_status, final_assigns} =
-      case MatchDriver.get_match_state(match.id) do
-        {:normal, player_data} -> {:normal, Map.merge(base_assigns.(player_data), initial_match_state(player_data))}
-        {:ongoing, current_match_state} -> {:ongoing, Map.merge(base_assigns.(current_match_state.player_data), current_match_state)}
-      end
-
-    {:ok, socket
-     |> assign(final_assigns)
-     |> assign(:mode, game_mode(game_status))
-     |> push_event("connect_match", %{match_id: match.id, current_user_id:
-        socket.assigns.current_user.id, video_enabled: match.video_enabled})
-    }
   end
 
   def handle_event("review_answer", %{"playerid" => raw_player_id, "result" => result}, socket) do
@@ -126,6 +153,13 @@ defmodule StopMyHandWeb.Game.Match do
     updated_player_data = MatchDriver.get_player_data(socket.assigns.match.id)
 
     {:noreply, assign(socket, :player_data, updated_player_data)}
+  end
+
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
+    Logger.error("Match driver down", match_id: socket.assigns.match.id)
+    {:noreply, socket
+    |> put_flash(:error, "Match ended unexpectedly")
+    |> redirect(to: ~p"/")}
   end
 
   defp default_player_activity(player_ids, categories) do

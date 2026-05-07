@@ -47,4 +47,7 @@ defmodule StopMyHand.Game do
   def get_created_match_count() do
     Repo.aggregate(Match, :count)
   end
+
+  def player_in_match?(match, player_id), do:
+    player_id in [match.creator.id|(for player <- match.players, do: player.user.id)]
 end
