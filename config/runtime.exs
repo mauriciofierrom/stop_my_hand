@@ -33,7 +33,8 @@ if config_env() == :prod do
   config :stop_my_hand, StopMyHand.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6
+    socket_options: maybe_ipv6,
+    start_apps_before_migration: [:logger_json]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -62,6 +63,9 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+
+  config :logger, :default_handler,
+    formatter: LoggerJSON.Formatters.Basic.new(metadata: [:request_id])
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

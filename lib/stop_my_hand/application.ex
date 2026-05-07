@@ -7,6 +7,8 @@ defmodule StopMyHand.Application do
 
   @impl true
   def start(_type, _args) do
+    LoggerJSON.configure_log_level_from_env!()
+
     children = [
       # Start the prometheus metrics
       StopMyHand.PromEx,
