@@ -60,7 +60,6 @@ jobs:
           git remote add gigalixir https://$EMAIL_ENCODED:$GIGALIXIR_API_KEY@git.gigalixir.com/$GIGALIXIR_APP_NAME.git
           git push gigalixir main
   terraform:
-    if: false # Disabled until Graphana issue solved
     runs-on: ubuntu-latest
     needs: deploy
     defaults:
