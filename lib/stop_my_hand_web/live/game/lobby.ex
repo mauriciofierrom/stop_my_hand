@@ -7,6 +7,8 @@ defmodule StopMyHandWeb.Game.Lobby do
   alias StopMyHandWeb.Endpoint
   alias Phoenix.LiveView.AsyncResult
 
+  require Logger
+
   def render(assigns) do
     ~H"""
     <div class="flex flex-col gap-6 items-center justify-center">
@@ -31,49 +33,67 @@ defmodule StopMyHandWeb.Game.Lobby do
   end
 
   def mount(params, _session, socket) do
-    match = Game.get_match(params["match_id"])
-    match_topic = "match:#{match.id}"
-    current_user = socket.assigns.current_user
+    try do
+      match = Game.get_match(params["match_id"])
+      current_user = socket.assigns.current_user
 
-    case GenServer.whereis({:via, Registry, {StopMyHand.Registry, match.id}}) do
-      nil ->
-        if connected?(socket) do
-          Presence.track(socket.transport_pid, match_topic, current_user.id, %{})
-          Endpoint.subscribe("match_changes:#{params["match_id"]}")
-        end
+      if not Game.player_in_match?(match, current_user.id) do
+        Logger.warning("Unauthorized match access attempt", match_id: match.id, user_id: current_user.id)
 
-        online_users = Presence.list(match_topic)
-
-        players_with_status = Enum.map([%Player{user: match.creator, match_id: match.id} | match.players], fn player ->
-          status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
-          {player, status}
-        end)
-
-        {:ok,
-        socket
-        |> assign(:players, AsyncResult.ok(players_with_status))
-        |> assign(:match, match)
+        {:ok, socket
+        |> put_flash(:error, "Player does not belong in match")
+        |> redirect(to: ~p"/")
         }
-      _pid ->
-        {:ok, push_navigate(socket, to: ~p"/match/#{match.id}")}
+      else
+        case GenServer.whereis({:via, Registry, {StopMyHand.Registry, match.id}}) do
+          nil ->
+            if connected?(socket) do
+              Endpoint.subscribe("match_changes:#{match.id}")
+              Presence.track(socket.transport_pid, "match:#{match.id}", current_user.id, %{})
+            end
+
+            online_users = Presence.list("match:#{match.id}")
+
+            players_with_status = Enum.map([%Player{user: match.creator, match_id: match.id} | match.players], fn player ->
+              status = if Enum.member?(Map.keys(online_users), "#{player.user.id}"), do: :online, else: :offline
+              {player, status}
+            end)
+
+            {:ok,
+            socket
+            |> assign(:match, match)
+            |> assign(:players, AsyncResult.ok(players_with_status))
+            }
+          _pid ->
+            {:ok, push_navigate(socket, to: ~p"/match/#{match.id}")}
+        end
+      end
+
+    rescue
+      Ecto.NoResultsError ->
+        Logger.error("Match not found", match_id: params["match_id"])
+        {:ok, socket
+        |> put_flash(:error, "Match not found")
+        |> redirect(to: ~p"/")
+        }
     end
   end
 
   def handle_event("play", _params, socket) do
     players = for player <- socket.assigns.match.players, do: player.user
-    full_players = [socket.assigns.match.creator|players]
+    full_players = [socket.assigns.match.creator | players]
 
-    # Start the driver for this match
-    case DynamicSupervisor
-      .start_child(StopMyHand.DynamicSupervisor,
-        {StopMyHand.MatchDriver,
-         %{players: full_players, match_id: socket.assigns.match.id, scheduler: StopMyHand.Scheduler.Default}}) do
+    case match_supervisor().start_match(%{players: full_players, match_id: socket.assigns.match.id, scheduler: StopMyHand.Scheduler.Default}) do
       {:ok, _pid} ->
         Endpoint.broadcast("match_changes:#{socket.assigns.match.id}", "game_start", %{})
-      {:error, reason} -> IO.inspect(reason, label: "Match Driver")
+        {:noreply, socket}
+      {:error, reason} ->
+        Logger.error("Failed to start MatchDriver: #{inspect(reason)}", match_id: socket.assigns.match.id)
+        {:noreply, socket
+         |> put_flash(:error, "Match could not get started")
+         |> redirect(to: ~p"/")
+        }
     end
-
-    {:noreply, socket}
   end
 
   def handle_info(%{event: "join", payload: {_, {_, user_id}}}, socket) do
@@ -84,9 +104,7 @@ defmodule StopMyHandWeb.Game.Lobby do
 
   def handle_info(%{event: "leave", payload: {_, {_, user_id}}}, socket) do
     %AsyncResult{result: players} = socket.assigns.players
-
     new_players_status = handle_presence(players, user_id, :offline)
-
     {:noreply, assign(socket, :players, AsyncResult.ok(new_players_status))}
   end
 
@@ -117,10 +135,15 @@ defmodule StopMyHandWeb.Game.Lobby do
     end)
   end
 
-  defp can_start_game(match_creator_id, async_players) do
-    %AsyncResult{result: players} = async_players
+  defp can_start_game(_, %AsyncResult{ok?: false}), do: false
+  defp can_start_game(match_creator_id, %AsyncResult{ok?: true, result: players}) do
     filtered = Enum.filter(players, fn {p, s} ->
-      s == :online && !is_nil(p.id) && p.id != match_creator_id end)
+      s == :online && !is_nil(p.id) && p.id != match_creator_id
+    end)
     !Enum.empty?(filtered)
+  end
+
+  defp match_supervisor do
+    Application.get_env(:stop_my_hand, :match_supervisor)
   end
 end

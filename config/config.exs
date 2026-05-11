@@ -62,6 +62,7 @@ config :phoenix, :json_library, Jason
 # Set the default scheduler
 # Test environment overrides this to use a mock via Mox
 config :stop_my_hand, scheduler: StopMyHand.Scheduler
+config :stop_my_hand, match_supervisor: StopMyHand.MatchSupervisor
 config :stop_my_hand, :timeouts, review: 10_000
 
 # Import environment specific config. This must remain at the bottom

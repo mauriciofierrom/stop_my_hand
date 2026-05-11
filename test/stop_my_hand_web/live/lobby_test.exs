@@ -1,12 +1,33 @@
 defmodule StopMyHandWeb.LobbyTest do
   use StopMyHandWeb.ConnCase
 
+  import Mox
+
   import Phoenix.LiveViewTest
   import StopMyHand.GameFixtures
+  import StopMyHand.AccountsFixtures
 
   @status_indicator_sel "[data-testid='status-indicator']"
 
+  setup :verify_on_exit!
+
   describe "Lobby page" do
+    test "redirects when the match doesn't exist", %{conn: conn} do
+      match = create_match()
+
+      assert {:error, {:redirect, %{to: "/"}}} =
+        live(conn |> log_in_user(match.creator), ~p"/lobby/99999")
+    end
+
+    test "redirects when player doesn't belong in the match", %{conn: conn} do
+      match = create_match()
+
+      unrelated_user = user_fixture()
+
+      assert {:error, {:redirect, %{to: "/"}}} =
+        live(conn |> log_in_user(unrelated_user), ~p"/lobby/#{match.id}")
+    end
+
     test "shows invited players with their status", %{conn: conn} do
       match = create_match()
       [first_player|_rest] = match.players
@@ -50,8 +71,6 @@ defmodule StopMyHandWeb.LobbyTest do
       send(lv.pid, %{event: "join", payload: {1, {2, first_player.user.id}}})
 
       new_result = render_async(lv)
-
-      send(lv.pid, %{event: "join", payload: {1, {2, first_player.user.id}}})
 
       offline = Floki.find(new_result, "#{@status_indicator_sel}.bg-light")
       online = Floki.find(new_result, "#{@status_indicator_sel}.bg-accent")
@@ -111,10 +130,29 @@ defmodule StopMyHandWeb.LobbyTest do
       result = render_async(lv)
 
       online = Floki.find(result, "#{@status_indicator_sel}.bg-accent")
-      disabled_button = Floki.find(result, "button[disabled]")
 
       assert length(online) == 2
       assert Floki.find(result, "button[disabled]") == []
+    end
+
+    test "redirects when the match driver fails to start", %{conn: conn} do
+      match = create_match()
+      [first_player|_rest] = match.players
+
+      {:ok, first_player_lv, _html} = live(log_in_user(conn, first_player.user), "/lobby/#{match.id}")
+
+      _first_result = render_async(first_player_lv)
+
+      {:ok, lv, _html} = live(log_in_user(conn, match.creator), "/lobby/#{match.id}")
+
+      result = render_async(lv)
+
+      expect(StopMyHand.MatchSupervisor.Mock, :start_match, fn _ -> {:error, "Some reason"} end)
+
+      lv |> element("button", "Play!") |> render_click()
+
+      flash = assert_redirect lv, "/"
+      assert flash["error"] == "Match could not get started"
     end
   end
 end
