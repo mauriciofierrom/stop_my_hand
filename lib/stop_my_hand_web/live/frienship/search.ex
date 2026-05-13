@@ -1,8 +1,11 @@
 defmodule StopMyHandWeb.Friendship.Search do
   use StopMyHandWeb, :live_component
+
   alias Phoenix.LiveView.AsyncResult
   alias StopMyHand.Friendship
   alias StopMyHandWeb.Endpoint
+
+  require Logger
 
   def render(assigns) do
     ~H"""
@@ -34,7 +37,7 @@ defmodule StopMyHandWeb.Friendship.Search do
 
   def update(assigns, socket) do
     {:ok, socket
-     |> assign(:results, AsyncResult.ok([]))
+     |> assign_new(:results, fn -> AsyncResult.ok([]) end)
      |> assign(:current_user, assigns.current_user)
     }
   end
@@ -60,21 +63,29 @@ defmodule StopMyHandWeb.Friendship.Search do
   3. Show a success flash notification
   """
   def handle_event("invite_friend", %{"userid" => userid}, socket) do
+    user_id = String.to_integer(userid)
     current_user = socket.assigns.current_user
-    res = Friendship.send_invite(%{invitee_id: current_user.id, invited_id: userid})
+    res = Friendship.send_invite(%{invitee_id: current_user.id, invited_id: user_id})
     case res do
       {:ok, invite} ->
-        %{result: result} = socket.assigns.results
-        filtered = Enum.filter(result, fn user -> user.id == userid end)
+        case socket.assigns.results do
+          %AsyncResult{ok?: true, result: results} ->
+            filtered = Enum.reject(results, fn user -> user.id == user_id end)
 
-        Endpoint.broadcast("friends:#{userid}", "invite_received", %{invite_id: invite.id})
+            Endpoint.broadcast("friends:#{user_id}", "invite_received", %{invite_id: invite.id})
 
-        {:noreply,
-         put_flash(socket, :info, "Invitation sent")
-         |> assign(:results, AsyncResult.ok(filtered))
-         |> push_event("js-exec", %{to: "#search-friend", attr: "phx-remove"})
-        }
-      _ -> {:noreply, put_flash(socket, :error, "Error when sending invite")}
+            {:noreply,
+            put_flash(socket, :info, "Invitation sent")
+            |> assign(:results, AsyncResult.ok(filtered))
+            |> push_event("js-exec", %{to: "#search-friend", attr: "phx-remove"})
+            }
+          _ ->
+            Logger.error("Failed to get results", invited_id: user_id, user_id: current_user.id)
+            {:noreply, socket}
+        end
+      {:error, %Ecto.Changeset{} = changeset} ->
+        Logger.error("Failed to send invite", errors: changeset.errors, invited_id: user_id, user_id: current_user.id)
+        {:noreply, put_flash(socket, :error, "Error when sending invite")}
     end
   end
 
