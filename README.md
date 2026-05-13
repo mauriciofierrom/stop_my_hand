@@ -1,6 +1,6 @@
 # Stop My Hand
 
-Stop My Hand is a real-time, multiplayer online version of the Scarttegories
+Stop My Hand is a real-time, multiplayer online version of the Scattergories
 game.
 
 > [!NOTE]
@@ -12,7 +12,7 @@ game.
 *   **Friendship System:** Users can send and accept friend invitations.
 *   **Real-time Gameplay:** The core of the application is a real-time game built with Phoenix LiveView.
 *   **Online Status:** See when your friends are online.
-*   Video conferencing via WebRTC (in progress)
+*   **Video conferencing** Via WebRTC.
 
 ## Technical Stack
 
@@ -39,7 +39,7 @@ This project uses [Nix](https://nixos.org/) to provide a consistent development 
 
 1.  **Clone the repository:**
     ```sh
-    git clone <repository-url>
+    git clone https://github.com/mauriciofierrom/stop_my_hand.git
     cd stop_my_hand
     ```
 
