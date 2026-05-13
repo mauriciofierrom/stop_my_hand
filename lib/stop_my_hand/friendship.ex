@@ -17,7 +17,7 @@ defmodule StopMyHand.Friendship do
   end
 
   def get_invite_with_invitee(invite_id) do
-    Repo.get!(Invite, invite_id) |> Repo.preload(:invitee)
+    Repo.get(Invite, invite_id) |> Repo.preload(:invitee)
   end
 
   def get_pending_invites(user_id) do

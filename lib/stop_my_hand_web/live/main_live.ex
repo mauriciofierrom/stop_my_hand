@@ -15,6 +15,8 @@ defmodule StopMyHandWeb.Main do
   alias StopMyHandWeb.Presence
   alias StopMyHand.Cache
 
+  require Logger
+
   @notification "notification"
 
   def render(assigns) do
@@ -66,57 +68,89 @@ defmodule StopMyHandWeb.Main do
     {:noreply, assign(socket, :friends, AsyncResult.ok(fs))}
   end
 
-  def handle_info(%{event: "invite_accepted", payload: %{invited_id: invited_id}}, socket) do
-    invited = Accounts.get_user!(invited_id)
-
-    %AsyncResult{result: invites} = socket.assigns.invites
-    %AsyncResult{result: friends} = socket.assigns.friends
+  def handle_async(:fetch_friends, {:exit, reason}, socket) do
+    Logger.error("Error fetching friends #{inspect(reason)}", user_id: socket.assigns.current_user.id)
 
     {:noreply, socket
-    |> assign(:invites, fn -> {:ok, %{invites: Enum.filter(invites, &(&1.invitee.id != invited_id))}} end)
-    |> assign(:friends, fn -> {:ok, %{friends: Enum.sort([invited | friends])}} end)
-    |> put_flash(:info, "Invitation accepted by: #{invited.username}")}
+     |> assign(:friends, AsyncResult.failed(%AsyncResult{}, reason))
+     |> put_flash(:error, "Friends couldn't be loaded")
+    }
+  end
+
+  def handle_info(%{event: "invite_accepted", payload: %{invited_id: invited_id}}, socket) do
+    with %AsyncResult{ok?: true, result: invites} <- socket.assigns.invites,
+        %AsyncResult{ok?: true, result: friends} <- socket.assigns.friends do
+
+      invited = Accounts.get_user!(invited_id)
+
+      {:noreply, socket
+      |> assign(:invites, AsyncResult.ok(Enum.filter(invites, &(&1.invitee.id != invited_id))))
+      |> assign(:friends, AsyncResult.ok(Enum.sort([invited | friends])))
+      |> put_flash(:info, "Invitation accepted by: #{invited.username}")}
+    else
+      _ ->
+        Logger.error("Error receiving invitation acceptance", invited_id: invited_id, recipient_id: socket.assigns.current_user.id)
+        {:noreply, socket |> put_flash(:error, "Failed to receive accepted invitation")}
+    end
   end
 
   def handle_info(%{event: "invite_received", payload: %{invite_id: invite_id}}, socket) do
-    invite = Friendship.get_invite_with_invitee(invite_id)
-
-    %AsyncResult{result: invites} = socket.assigns.invites
-
-    {:noreply, socket
-    |> assign(:invites, fn -> {:ok, %{invites: Enum.sort([invite | invites])}} end)
-    |> put_flash(:info, "Invitation received")}
+    case socket.assigns.invites do
+      %AsyncResult{ok?: true, result: invites} ->
+        case Friendship.get_invite_with_invitee(invite_id) do
+          nil ->
+            Logger.error("Error fetching invite", invite_id: invite_id, user_id: socket.assigns.current_user.id)
+            {:noreply, socket |> put_flash(:error, "Failed to fetch invite")}
+          invite ->
+            {:noreply, socket
+            |> assign(:invites, AsyncResult.ok(Enum.sort([invite | invites])))
+            |> put_flash(:info, "Invitation received")}
+        end
+      _ ->
+        Logger.error("Error receiving invitation", invite_id: invite_id, user_id: socket.assigns.current_user.id)
+        {:noreply, socket |> put_flash(:error, "Failed to receive invitation")}
+    end
   end
 
   def handle_info(%{event: "join", payload: {_, {_, user_id}}}, socket) do
     current_user = socket.assigns.current_user
 
-    %AsyncResult{result: friends} = socket.assigns.friends
-
-    new_friends = handle_presence(current_user, friends, user_id, :online)
-
-    {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
+    case socket.assigns.friends do
+      %AsyncResult{ok?: true, result: friends} ->
+        new_friends = handle_presence(current_user, friends, user_id, :online)
+        {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
+      _ ->
+        Logger.error("Error when adding joining friend", joining_id: user_id, user_id: current_user.id)
+        {:noreply, socket}
+    end
   end
 
   def handle_info(%{event: "leave", payload: {_, {_, user_id}}}, socket) do
     current_user = socket.assigns.current_user
 
-    %AsyncResult{result: friends} = socket.assigns.friends
-
-    new_friends = handle_presence(current_user, friends, user_id, :offline)
-
-    {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
+    case socket.assigns.friends do
+      %AsyncResult{ok?: true, result: friends} ->
+        new_friends = handle_presence(current_user, friends, user_id, :offline)
+        {:noreply, assign(socket, :friends, AsyncResult.ok(new_friends))}
+      _ ->
+        Logger.error("Error when removing leaving friend", joining_id: user_id, user_id: current_user.id)
+        {:noreply, socket}
+    end
   end
 
   def handle_info(%{event: "game_invite", payload: notification_id}, socket) do
-    notification = Repo.get!(StopMyHand.Notification.Notification, notification_id)
-
-    {:noreply, socket
-     |> assign(:game_invite, %{
-           game_id: notification.metadata["match_id"],
-           invitee_handle: notification.metadata["invitee"],
-           show: true})
-    }
+    case Repo.get(StopMyHand.Notification.Notification, notification_id) do
+      nil ->
+        Logger.error("Error fetching notification", notification_id: notification_id, user_id: socket.assigns.current_user.id)
+        {:noreply, socket}
+      notification ->
+        {:noreply, socket
+        |> assign(:game_invite, %{
+              game_id: notification.metadata["match_id"],
+              invitee_handle: notification.metadata["invitee"],
+              show: true})
+        }
+    end
   end
 
   def create_match(js \\ %JS{}) do
@@ -142,22 +176,33 @@ defmodule StopMyHandWeb.Main do
   end
 
   def handle_event("accept_invite", %{"inviteid" => inviteid}, socket) do
-    invite = Friendship.get_invite_with_invitee(inviteid)
-    accept_result = Friendship.accept_invite(invite)
-    case accept_result do
-      {:ok, _} ->
-        current_user = socket.assigns.current_user
+    current_user = socket.assigns.current_user
+    case Friendship.get_invite_with_invitee(inviteid) do
+      nil ->
+        Logger.error("Error fetching invitation", invite_id: inviteid, user_id: current_user.id)
+        {:noreply, put_flash(socket, :error, "Error fetching invitation")}
+      invite ->
+        accept_result = Friendship.accept_invite(invite)
+        case accept_result do
+          {:ok, _} ->
 
-        %AsyncResult{result: invites} = socket.assigns.invites
-        %AsyncResult{result: friends} = socket.assigns.friends
+            with %AsyncResult{ok?: true, result: invites} <- socket.assigns.invites,
+                %AsyncResult{ok?: true, result: friends} <- socket.assigns.friends do
+              Endpoint.broadcast("friends:#{invite.invitee_id}", "invite_accepted", %{invited_id: current_user.id})
 
-        Endpoint.broadcast("friends:#{invite.invitee_id}", "invite_accepted", %{invited_id: current_user.id})
-
-        {:noreply, socket
-        |> assign(:invites, fn -> {:ok, %{invites: Enum.filter(invites, &(&1.invitee.id != invite.invitee.id))}} end)
-        |> assign(:friends, fn -> {:ok, %{friends: Enum.sort([invite.invitee | friends])}} end)
-        |> put_flash(:info, "Invitation accepted")}
-      _ -> {:noreply, put_flash(socket, :error, "Error when accepting invite")}
+              {:noreply, socket
+              |> assign(:invites, AsyncResult.ok(Enum.filter(invites, &(&1.invitee.id != invite.invitee.id))))
+              |> assign(:friends, AsyncResult.ok(Enum.sort([invite.invitee | friends])))
+              |> put_flash(:info, "Invitation accepted")}
+            else
+              _ ->
+                Logger.error("Error fetching invites & friends", user_id: current_user.id)
+                {:noreply, put_flash(socket, :error, "Error when accepting invite")}
+            end
+          _ ->
+            Logger.error("Error accepting invite", invite_id: inviteid, user_id: current_user.id)
+            {:noreply, put_flash(socket, :error, "Error when accepting invite")}
+        end
     end
   end
 
@@ -167,11 +212,19 @@ defmodule StopMyHandWeb.Main do
     remove_result = Friendship.remove_friend(current_user, userid)
     case remove_result do
       {:ok, _} ->
-          %AsyncResult{result: friends} = socket.assigns.friends
-          {:noreply, socket
-          |> assign(:friends, fn -> {:ok, %{friends: Enum.filter(friends, fn {id, _} -> id != userid end)}} end)
-          |> put_flash(:info, "Friend removed")}
-      _ -> {:noreply, put_flash(socket, :error, "Error removing friend")}
+        case socket.assigns.friends do
+          %AsyncResult{ok?: true, result: friends} ->
+            {:noreply, socket
+            |> assign(:friends, AsyncResult.ok(Enum.filter(friends, fn {id, _} -> id != String.to_integer(userid) end)))
+            |> put_flash(:info, "Friend removed")
+            }
+          _ ->
+            Logger.error("Error when removing friend", friend_id: userid, user_id: current_user.id)
+            {:noreply, socket |> put_flash(:error, "Failed to remove friend")}
+        end
+      _ ->
+        Logger.error("Error removing friend", friend_id: userid, user_id: current_user.id)
+        {:noreply, put_flash(socket, :error, "Error removing friend")}
     end
   end
 
