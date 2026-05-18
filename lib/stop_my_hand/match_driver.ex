@@ -7,6 +7,8 @@ defmodule StopMyHand.MatchDriver do
   alias StopMyHandWeb.Endpoint
   alias StopMyHand.Game.Score
 
+  require Logger
+
   @quorum_timeout 45_000
   @game_start_timeout 1_000
   @answers_timeout 10_000
@@ -48,6 +50,8 @@ defmodule StopMyHand.MatchDriver do
       player_data: player_data,
       score: (for expected_player <- expected_players, into: %{}, do: {expected_player.id, 0})
     }
+
+    Logger.info("Starting match", match_id: match_id, starting_letter: starting_letter)
 
     {:ok, initial_state}
   end
@@ -133,6 +137,8 @@ defmodule StopMyHand.MatchDriver do
     all_joined = [player_id|joined]
     scheduler().send_after(self(), :game_start, @game_start_timeout)
 
+    Logger.info("All players have joined. The game starts", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|joined: all_joined, game_status: :ongoing}}
   end
 
@@ -143,22 +149,30 @@ defmodule StopMyHand.MatchDriver do
 
     scheduler().send_after(self(), :game_start, @game_start_timeout)
 
+    Logger.info("Minimal number of players joined. Starting match countdown", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|joined: joined, game_status: :starting}}
   end
 
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :starting} = state) when length(joined) >= 1 do
     joined = [player_id|joined]
 
+    Logger.info("Player joined while starting the game", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|joined: joined}}
   end
 
   # Only on the init state we add players to mark them as JOINED
   def handle_call({:add_player, player_id}, _from, %{joined: joined, game_status: :init} = state) do
+    Logger.info("First player joined", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|joined: [player_id|joined]}}
   end
 
   # On any other game state the player is considered pending and will be moved before the new round starts
   def handle_call({:add_player, player_id}, _from, %{pending: pending} = state) do
+    Logger.info("Player joined on started match. Adding to pending.", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|pending: [player_id|pending]}}
   end
 
@@ -169,10 +183,15 @@ defmodule StopMyHand.MatchDriver do
     # Tell the channels to redirect
     broadcast("game_finished", state.match_id, %{})
 
+    Logger.info("No quorum. Match ending.", match_id: state.match_id)
+
     {:stop, :no_quorum, state}
   end
 
   def handle_call({:remove_player, player_id}, _from, state) do
+
+    Logger.info("Remove player from match", match_id: state.match_id, player_id: player_id)
+
     {:reply, :ok, %{state|joined: state.joined -- [player_id]}}
   end
 
@@ -180,6 +199,7 @@ defmodule StopMyHand.MatchDriver do
     broadcast("round_finished", state.match_id, %{})
 
     scheduler().send_after(self(), :answers_timeout, @answers_timeout)
+
     {:reply, :ok, %{state|game_status: :awaiting_answers}}
   end
 
@@ -248,21 +268,25 @@ defmodule StopMyHand.MatchDriver do
     {:reply, {:ongoing, match_state}, state}
   end
 
-  def handle_info(:game_start, state) do
+  def handle_info(:game_start, %{match_id: match_id } = state) do
     payload = %{
       letter: state.letter,
       round: state.round,
       countdown: @countdown
     }
 
-    broadcast("game_start", state.match_id, payload)
+    broadcast("game_start", match_id, payload)
 
     scheduler().send_after(self(), :round_timeout, @round_timeout)
+
+    Logger.info("Game started", match_id: match_id, letter: state.letter, round: state.round)
 
     {:noreply, %{state|game_status: :ongoing}}
   end
 
   def handle_info(:no_quorum, %{game_status: :init} = state) do
+    Logger.info("No quorum reached during match init", match_id: state.match_id)
+
     {:stop, :no_quorum, state}
   end
 
@@ -272,6 +296,9 @@ defmodule StopMyHand.MatchDriver do
 
   def handle_info(:round_timeout, %{game_status: :ongoing} = state) do
     broadcast("round_finished", state.match_id, %{})
+
+    Logger.info("Round finished", match_id: state.match_id, round: state.round)
+
     {:noreply, %{state|game_status: :awaiting_answers}}
   end
 
@@ -286,10 +313,14 @@ defmodule StopMyHand.MatchDriver do
 
     scheduler().send_after(self(), {:review_timeout, state.cat_index},  (@base_review_timeout * length(state.joined)))
 
+    Logger.info("Answer gathering timeout", match_id: state.match_id, round: state.round, missing: missing)
+
     {:noreply, %{state | joined: updated_joined, pending: updated_pending, game_status: :in_review}}
   end
 
   def handle_info(:answers_timeout, state) do
+    Logger.info("Done gathering answers", match_id: state.match_id, round: state.round)
+
     {:noreply, state}
   end
 
@@ -300,10 +331,14 @@ defmodule StopMyHand.MatchDriver do
 
     scheduler().send_after(self(), :show_scores_timeout, @next_round_timeout)
 
+    Logger.info("Reviews finished. Showing scores.", match_id: state.match_id, round: state.round)
+
     {:noreply, %{state|game_status: :showing_scores, player_data: round_data_with_scores}}
   end
 
   def handle_info({:review_timeout, cat_idx}, state) do
+    Logger.info("Review step finished", match_id: state.match_id, round: state.round, category: Enum.at(@categories, cat_idx))
+
     new_cat_index = cat_idx + 1
 
     broadcast("in_review", state.match_id, %{category: Enum.at(@categories, new_cat_index)})
@@ -337,6 +372,8 @@ defmodule StopMyHand.MatchDriver do
     broadcast("round_start", state.match_id, payload)
 
     scheduler().send_after(self(), :round_timeout, @round_timeout)
+
+    Logger.info("Starting next round", match_id: state.match_id, letter: new_letter, round: new_round)
 
     {:noreply,
      %{state|
