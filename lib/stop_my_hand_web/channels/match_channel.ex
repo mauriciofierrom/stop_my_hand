@@ -6,6 +6,8 @@ defmodule StopMyHandWeb.MatchChannel do
 
   alias StopMyHand.MatchDriver
 
+  require Logger
+
   @impl true
   def join("match:"<>raw_match_id, _payload, socket) do
     match_id = String.to_integer(raw_match_id)
@@ -48,6 +50,8 @@ defmodule StopMyHandWeb.MatchChannel do
     can show it in their player view.
   """
   def handle_in("player_finished", _params, socket) do
+    Logger.info("Player finished round", match_id: socket.assigns.match_id)
+
     MatchDriver.finish_round(socket.assigns.match_id)
     {:noreply, socket}
   end
@@ -58,6 +62,8 @@ defmodule StopMyHandWeb.MatchChannel do
   end
 
   def handle_in("report_answers", answers, socket) do
+    Logger.info("Answers submitted by player", match_id: socket.assigns.match_id, user_id: socket.assings.user)
+
     MatchDriver.report_player_answers(socket.assigns.match_id, socket.assigns.user, answers)
     {:noreply, socket}
   end
