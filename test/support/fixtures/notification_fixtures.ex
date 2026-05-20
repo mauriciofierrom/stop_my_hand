@@ -6,7 +6,6 @@ defmodule StopMyHand.NotificationFixtures do
   alias StopMyHand.Notification
 
   def create_unread_notification(recipient, title, sent_at \\ NaiveDateTime.utc_now()) do
-    IO.inspect(sent_at)
     attrs = %{
       title: title,
       type: "game_invite",
